@@ -18,7 +18,7 @@
     font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#fff}
   canvas#c{display:block;position:fixed;inset:0;width:100%;height:100%}
   .pill{position:fixed;background:rgba(0,0,0,.45);border-radius:999px;padding:6px 14px;font-weight:700;font-size:18px;
-    display:flex;align-items:center;gap:6px;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);transition:transform .12s,background .2s}
+    display:flex;align-items:center;gap:6px;transition:transform .12s,background .2s}
   .pill.pop{transform:scale(1.15)}
   #coins{top:calc(env(safe-area-inset-top) + 10px);left:12px}
   #bag{top:calc(env(safe-area-inset-top) + 54px);left:12px;font-size:15px}
@@ -58,17 +58,14 @@
   .sellrow button.on{background:#3d7f45}
   #foodInfo{font-size:13px;opacity:.9;margin-top:6px}
   #quest{position:fixed;left:12px;top:calc(env(safe-area-inset-top) + 94px);max-width:min(62vw,280px);background:rgba(0,0,0,.5);
-    border-radius:12px;padding:7px 10px;font-size:13px;line-height:1.3;display:none;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+    border-radius:12px;padding:7px 10px;font-size:13px;line-height:1.3;display:none;
     transition:background .3s,transform .2s;pointer-events:none}
   #quest.done{background:rgba(40,140,60,.85);transform:scale(1.04)}
   #quest .qt{font-weight:700}
   #quest .qs{display:flex;justify-content:space-between;gap:8px;font-size:12px;opacity:.9;margin-top:3px}
   #quest .qb{height:4px;background:rgba(255,255,255,.2);border-radius:2px;margin-top:4px;overflow:hidden}
   #quest .qb i{display:block;height:100%;background:#b6ff8a}
-  #lookBtn{position:fixed;left:16px;bottom:calc(env(safe-area-inset-bottom) + 22px);width:56px;height:56px;border-radius:50%;
-    border:3px solid rgba(255,182,206,.85);background:rgba(120,30,70,.55);color:#fff;font-size:24px;display:flex;align-items:center;justify-content:center;
-    box-shadow:0 3px 10px rgba(0,0,0,.4);padding:0}
-  #lookBtn.glow{animation:glowpink 1s infinite alternate}
+  #dbgBtn.glow{animation:glowpink 1s infinite alternate}
   @keyframes glowpink{from{box-shadow:0 0 0 0 rgba(255,140,180,.9)}to{box-shadow:0 0 0 12px rgba(255,140,180,0)}}
   .lookScroll{max-height:60vh;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y}
   .lookHead{font-weight:800;font-size:15px;margin:10px 0 6px}
@@ -174,7 +171,6 @@
 <canvas id="mini" width="168" height="168"></canvas>
 <button id="ringBtn" aria-label="Кольцо инструментов">🔄</button>
 <button id="peopleBtn" aria-label="Жители">👥</button>
-<button id="lookBtn" aria-label="Сюрпризы">🎁</button>
 <div id="lookPanel" class="sheet"><div class="box">
   <h3>🎁 Сюрпризы</h3>
   <p>Выполни задание — и получи пароль. Каждый пароль открывает новый образ.</p>
@@ -197,6 +193,7 @@
 </div></div>
 <div id="dbg">
   <div class="t">Настройки</div>
+  <button id="lookBtn" style="background:#b8406b">🎁 Сюрпризы и образы</button>
   <button id="snd">🔊 Звук: вкл</button>
   <button id="mus">🎵 Музыка: вкл</button>
   <button id="updBtn">🔄 Проверить обновление</button>
@@ -277,9 +274,10 @@
 <script>
 "use strict";
 // Номер версии: меняй при каждом выпуске — по нему кнопка «Проверить обновление» понимает, что есть новое
-const GAME_VERSION = '1.16';
+const GAME_VERSION = '1.17';
 // ================== БАЗА ==================
-const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+const cv = document.getElementById('c');
+let ctx = cv.getContext('2d');    // let: при подготовке кусков земли временно рисуем в другой холст
 if (!ctx.roundRect){
   CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r){
     this.moveTo(x + r, y); this.arcTo(x + w, y, x + w, y + h, r); this.arcTo(x + w, y + h, x, y + h, r);
@@ -289,7 +287,9 @@ if (!ctx.roundRect){
 let W, H, DPR, SCALE;
 let coinTarget = { x: 40, y: 28 };
 function resize(){
-  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  // на телефонах 1.5 — на глаз почти не отличить, а рисовать почти вдвое меньше точек
+  const touch = navigator.maxTouchPoints > 0 || 'ontouchstart' in window;
+  DPR = Math.min(window.devicePixelRatio || 1, touch ? 1.5 : 2);
   W = innerWidth; H = innerHeight;
   cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
   SCALE = Math.min(W, H) / 420;
@@ -542,6 +542,7 @@ const SKINS = {
     { id:'girl',     name:'Девочка',   icon:'👧', task:'Поцелуй меня 10 раз 💋',                       hash:'5d2b2a1e' },
     { id:'princess', name:'Принцесса', icon:'👸', task:'Обними меня крепко-крепко целую минуту 🤗',    hash:'e97cfe12' },
     { id:'cat',      name:'Котик',     icon:'🐱', task:'Скажи мне 5 комплиментов подряд 🥰',          hash:'53bb38e7' },
+    { id:'fairy',    name:'Фея',       icon:'🧚', task:'Пришли мне 1 фотку нюдс 😏📸',                hash:'ca0e86f' },
   ],
   axe: [
     { id:'default',  name:'Обычные',   icon:'🪓' },
@@ -1182,7 +1183,9 @@ function renderLook(){
             S.look.open[sk.id] = true; S.look[chain] = sk.id; save();
             $('lookPanel').classList.remove('open'); celebrate(P.x, P.y); $('lookBtn').classList.remove('glow');
             for (let i = 0; i < 6; i++) spawnText(P.x + (Math.random() - .5) * 120, P.y - 60 - Math.random() * 60, '❤️', '#ff7aa2', 22);
-            banner(sk.icon + ' Открыто: ' + sk.name + '!', 'Спасибо, моя хорошая ❤️ Образ уже надет. Следующее задание — в 🎁');
+            const more = SKINS[chain].some(x => x.id !== 'default' && !S.look.open[x.id]);
+            banner(sk.icon + ' Открыто: ' + sk.name + '!', 'Спасибо, моя хорошая ❤️ Образ уже надет. ' +
+              (more ? 'Следующее задание — в ⚙️ → 🎁' : (chain === 'hero' ? 'Это был последний образ — ты открыла их все!' : 'Это были последние топорики — ты открыла их все!')));
           } else {
             err.textContent = inp.value.trim() ? 'Не тот пароль 🙈 Сначала выполни задание!' : 'Введи пароль 🙂';
             c.classList.remove('shake'); void c.offsetWidth; c.classList.add('shake'); sfxNo();
@@ -1199,9 +1202,9 @@ function renderLook(){
     }
   }
 }
-$('lookBtn').addEventListener('click', () => { unlockAudio(); S.flags.lookOpened = true; $('lookBtn').classList.remove('glow'); renderLook(); $('lookPanel').classList.add('open'); });
+$('lookBtn').addEventListener('click', () => { unlockAudio(); S.flags.lookOpened = true; $('dbgBtn').classList.remove('glow'); $('dbg').classList.remove('open'); renderLook(); $('lookPanel').classList.add('open'); });
 $('lookClose').addEventListener('click', () => $('lookPanel').classList.remove('open'));
-if (!S.flags.lookOpened) $('lookBtn').classList.add('glow');
+if (!S.flags.lookOpened) $('dbgBtn').classList.add('glow');   // подсветка ⚙️, пока сюрпризы ни разу не открывали
 
 // --- доска заказов ---
 $('ordClose').addEventListener('click', () => $('ordersPanel').classList.remove('open'));
@@ -1243,7 +1246,7 @@ function spawnChips(x, y, color, n, big){
     chips.push({ x, y, z: 20 + Math.random()*15, vx: Math.cos(a)*s, vy: Math.sin(a)*s*0.6, vz: 120 + Math.random()*140,
       life: 0.6 + Math.random()*0.4, rot: Math.random()*6, vr: (Math.random()-.5)*20, c: color, w: (big ? 5 : 3) + Math.random()*3 });
   }
-  if (chips.length > 500) chips.splice(0, chips.length - 500);
+  if (chips.length > 250) chips.splice(0, chips.length - 250);
 }
 function spawnText(x, y, txt, color, size){ texts.push({ x: x + (Math.random()-.5)*16, y, txt, c: color || '#fff', life: 0.9, size: size || 16 }); }
 const textCd = {};
@@ -1287,9 +1290,9 @@ function bossDamage(dmg, x, y, crit){
   if (S.won || n.state !== 'alive') return;
   if (rootsAlive()){
     if (onScreen(n.x, n.y)) sayOnce('shield', 2.5, '🛡️ Древо защищают корни — разбей их ⛏️ киркой!', '#ffd0a0');
-    n.shake = 0.1; return;
+    n.shake = 0.1; wakeNode(n); return;
   }
-  n.hp -= dmg; S.boss.hp = n.hp; n.shake = 0.18; n.showHp = 3;
+  n.hp -= dmg; S.boss.hp = n.hp; n.shake = 0.18; n.showHp = 3; wakeNode(n);
   if (onScreen(x, y)){ spawnChips(x, y - 40, Math.random() < 0.5 ? '#7a5532' : '#5aa865', crit ? 8 : 3); if (canPlay('boss', 0.07)) sfxHit('tree'); }
   // фазы: на 66% и 33% просыпаются корни
   const frac = n.hp / n.N.hp;
@@ -1299,7 +1302,7 @@ function bossDamage(dmg, x, y, crit){
   if (n.hp <= 0) bossDefeated();
 }
 function wakeRoots(){
-  for (const r of rootNodes){ r.state = 'growing'; r.t = 0; r.hpNext = r.hp = ROOT_HP * (1 + 0.5 * (S.boss.phase - 1)); r.dormant = false; }
+  for (const r of rootNodes){ r.state = 'growing'; r.t = 0; r.hpNext = r.hp = ROOT_HP * (1 + 0.5 * (S.boss.phase - 1)); r.dormant = false; wakeNode(r); }
   shake = 0.8; vibrate(200);
   if (AC && soundOn){ const t = AC.currentTime; noise(t, 0.9, 120, 0.5, 0.5, 'lowpass'); tone(t, 0.9, 70, 35, 0.4, 'sawtooth'); }
   banner('🌳 Фаза ' + (S.boss.phase + 1) + ': корни проснулись!', 'Пока живы корни, Древо неуязвимо. Поставь ⛏️ кирки в кольцо и отправь шахтёров в Сердце леса.');
@@ -1307,7 +1310,7 @@ function wakeRoots(){
 }
 function bossDefeated(){
   const n = greatNode; n.hp = 0; S.boss.hp = 0; S.won = true;
-  n.state = 'falling'; n.t = 0; n.fallDir = 1; shake = 1.5; vibrate(400);
+  n.state = 'falling'; n.t = 0; n.fallDir = 1; shake = 1.5; vibrate(400); wakeNode(n);
   for (let i = 0; i < 8; i++) spawnChips(n.x + (Math.random() - .5) * 200, n.y - 80, ['#5aa865','#ffd84a','#7a5532','#b6ff8a'][i % 4], 20, true);
   if (AC && soundOn){
     const t = AC.currentTime; noise(t, 1.5, 200, 0.4, 0.5, 'lowpass');
@@ -1372,7 +1375,7 @@ function hitNode(n, slot){
     if (!rootsAlive()) spawnText(hx, hy - 60, (crit ? '💥-' : '-') + dmg, crit ? '#ffb347' : '#fff', crit ? 19 : 15);
     bossDamage(dmg, hx, hy, crit); return;
   }
-  n.hp -= dmg; n.shake = 0.18; n.showHp = 2.2;
+  n.hp -= dmg; n.shake = 0.18; n.showHp = 2.2; wakeNode(n);
   spawnChips(n.x, n.y - 14, chipColor(n), crit ? 10 : 4);
   spawnText(n.x, n.y - (k === 'tree' ? 70 : 40) * s, (crit ? '💥-' : '-') + dmg, crit ? '#ffb347' : '#fff', crit ? 19 : 16);
   sfxHit(k);
@@ -1461,7 +1464,7 @@ function tryGate(pad){
   if (S.epoch < Z.epoch){ sayOnce('gateep' + pad.zone, 2, 'Нужна эпоха ' + Z.epoch + ' (Ратуша)', '#ffd0a0'); sfxNo(); return; }
   const need = missing(Z.cost);
   if (need.length){ sayOnce('gateneed' + pad.zone, 2, 'Нужно ещё: ' + need.join(' и '), '#ffd0a0'); sfxNo(); return; }
-  pay(Z.cost); S.zones[pad.zone] = true; miniBase = null; celebrate(pad.x, pad.y);
+  pay(Z.cost); S.zones[pad.zone] = true; miniBase = null; invalidateGround(); celebrate(pad.x, pad.y);
   const ZTIP = { 2:'Сосны крепче, но бревно стоит 5 💰', 3:'Камни бьёт только ⛏️ кирка',
                  4:'Встань у берега с 🎣 удочкой в кольце — рыба клюёт в воде', 5:'🌾 Пшеницу режет 🌙 серп, дубы дают дорогие брёвна',
                  6:'⚫ Уголь и 🟤 руду бьёт ⛏️ кирка. Из них плавильня делает ⚙️ слитки', 7:'Ели очень крепкие, но бревно стоит 30 💰. Тут тоже есть 🟤 руда',
@@ -1505,19 +1508,32 @@ const wMood = w => w.hungry ? 0.3 : (w.good ? 1.25 : 1);
 function wSpeed(w){ return 110 * W_SPEED * wMood(w); }
 function wRate(w){ return 0.8 * W_SPEED * wMood(w); }
 const wCap = w => w.data.job === 'carrier' ? W_BAG * 3 : W_BAG;
+// пересекает ли отрезок a→b круг (центр c, радиус r)
+function segHitsCircle(ax, ay, bx, by, cx, cy, r){
+  const dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy;
+  const t = L2 ? clamp(((cx - ax) * dx + (cy - ay) * dy) / L2, 0, 1) : 0;
+  const px = ax + dx * t - cx, py = ay + dy * t - cy;
+  return px * px + py * py < r * r;
+}
+const LAKE_ORBIT = LAKE.r + 45;      // по этой дуге жители обходят озеро
 function walkTo(w, tx, ty, dt){
-  const dx = tx - w.x, dy = ty - w.y, d = Math.hypot(dx, dy);
-  if (d < 6){ w.moving = false; return true; }
-  const s = Math.min(d, wSpeed(w) * dt);
-  let nx = w.x + dx / d * s, ny = w.y + dy / d * s;
-  // обходим озеро по берегу
-  const lx = nx - LAKE.x, ly = ny - LAKE.y, ld = Math.hypot(lx, ly);
-  if (ld < LAKE.r + 12){
-    const cross = (w.x - LAKE.x) * dy - (w.y - LAKE.y) * dx, sg = cross > 0 ? -1 : 1;
-    nx = LAKE.x + lx / ld * (LAKE.r + 12) + (-ly / ld) * sg * s * 0.8;
-    ny = LAKE.y + ly / ld * (LAKE.r + 12) + (lx / ld) * sg * s * 0.8;
+  const dT = Math.hypot(tx - w.x, ty - w.y);
+  if (dT < 6){ w.moving = false; return true; }
+  let gx = tx, gy = ty;
+  // прямой путь через воду? Тогда идём по дуге вдоль берега в сторону цели, пока путь не станет чистым
+  if (segHitsCircle(w.x, w.y, tx, ty, LAKE.x, LAKE.y, LAKE.r + 6)){
+    const aw = Math.atan2(w.y - LAKE.y, w.x - LAKE.x), at = Math.atan2(ty - LAKE.y, tx - LAKE.x);
+    let diff = at - aw; while (diff > Math.PI) diff -= 2 * Math.PI; while (diff < -Math.PI) diff += 2 * Math.PI;
+    const a2 = aw + (diff >= 0 ? 1 : -1) * Math.min(Math.abs(diff), 0.45);
+    gx = LAKE.x + Math.cos(a2) * LAKE_ORBIT; gy = LAKE.y + Math.sin(a2) * LAKE_ORBIT;
   }
-  w.x = nx; w.y = ny; w.face = Math.atan2(dy, dx); w.walk += dt * 9; w.moving = true;
+  const dx = gx - w.x, dy = gy - w.y, d = Math.hypot(dx, dy) || 1;
+  const s = Math.min(d, wSpeed(w) * dt);
+  w.x += dx / d * s; w.y += dy / d * s;
+  // в воду не заходим ни при каких условиях
+  const lx = w.x - LAKE.x, ly = w.y - LAKE.y, ld = Math.hypot(lx, ly);
+  if (ld < LAKE.r + 12 && ld > 0.001){ w.x = LAKE.x + lx / ld * (LAKE.r + 12); w.y = LAKE.y + ly / ld * (LAKE.r + 12); }
+  w.face = Math.atan2(dy, dx); w.walk += dt * 9; w.moving = true;
   return false;
 }
 function findTarget(w){
@@ -1535,7 +1551,7 @@ const onScreen = (x, y) => Math.abs(x - cam.x) * SCALE < W / 2 + 60 && Math.abs(
 function workerHit(w, n){
   if (n === greatNode){ bossDamage(W_DMG, w.x, w.y - 20, false); return; }
   const dmg = W_DMG, k = n.N.kind, vis = onScreen(n.x, n.y);
-  n.hp -= dmg; n.shake = 0.18; n.showHp = 1.5;
+  n.hp -= dmg; n.shake = 0.18; n.showHp = 1.5; wakeNode(n);
   if (vis){ spawnChips(n.x, n.y - 14, chipColor(n), 3); if (canPlay('whit', 0.12)) sfxHit(k); }
   if (n.hp > 0) return;
   n.t = 0; n.state = k === 'tree' ? 'falling' : 'empty'; n.fallDir = n.x >= w.x ? 1 : -1;
@@ -1965,10 +1981,10 @@ function padVisible(p){
   return true;
 }
 
-function updatePads(dt){
+function updatePads(dt, slow){
   playerShop = null;
   for (const p of pads){
-    p.vis = padVisible(p);
+    if (slow || p.vis === undefined) p.vis = padVisible(p);   // видимость клеток меняется редко — считаем 5 раз в секунду
     if (p.flash > 0) p.flash -= dt;
     if (p.reveal && p.reveal < 1) p.reveal = Math.min(1, p.reveal + dt * 2.2);
     if (p.newT > 0) p.newT -= dt;
@@ -1996,8 +2012,16 @@ function updatePads(dt){
 }
 const lockedAt = (x, y) => !zoneOpen(zoneAt(x, y));
 
+// ---- редкие проверки: 5 раз в секунду вместо 60 ----
+let slowT = 0;
+// ---- деревья/кусты/камни, которым что-то нужно (тряска, полоска здоровья, отрастание) ----
+const busyNodes = [];
+function wakeNode(n){ if (!n.busy){ n.busy = true; busyNodes.push(n); } }
+// ---- позиции инструментов кольца в этом кадре ----
+const ringPos = [];
 function update(dt){
   time += dt;
+  slowT -= dt; const slow = slowT <= 0; if (slow) slowT = 0.2;
   const iv = inputVec();
   P.moving = Math.hypot(iv.x, iv.y) > 0.05;
   const ox = P.x, oy = P.y;
@@ -2037,52 +2061,64 @@ function update(dt){
 
   // кольцо инструментов
   ring.angle += ring.speed * Math.PI * 2 * dt;
-  const reach = ring.radius + AXE_R + 40, cnt = S.slots.length;
+  const R0 = ring.radius, reach = R0 + AXE_R + 40, cnt = S.slots.length;
+  // позиции инструментов считаем один раз за кадр, а не для каждого дерева заново
+  ringPos.length = cnt;
+  for (let i = 0; i < cnt; i++){ const a = ring.angle + i * Math.PI * 2 / cnt; ringPos[i] = [P.x + Math.cos(a) * R0, P.y + Math.sin(a) * R0]; }
   const has = {}; for (const t of S.slots) has[t] = true;
   eachNear(P.x - reach, P.y - reach, P.x + reach, P.y + reach, n => {
     if (n.state !== 'alive' || !zoneOpen(n.zone)) return;
     const hitR = AXE_R + n.N.hitR, oy2 = n.N.kind === 'tree' ? 8 : 6;
+    // быстрый отсев: инструменты летают по кругу, дальше кольца ±hitR их не достать
+    const d = Math.hypot(n.x - P.x, n.y - oy2 - P.y);
+    if (Math.abs(d - R0) > hitR) return;
     if (!has[n.N.tool]){
       // подсказка: в кольце нет нужного инструмента
-      const d = Math.hypot(n.x - P.x, n.y - oy2 - P.y);
-      if (Math.abs(d - ring.radius) < hitR * 0.7){
+      if (Math.abs(d - R0) < hitR * 0.7){
         const T = TOOLS[n.N.tool];
         if (!toolOpen(n.N.tool)) sayOnce('need' + n.N.tool, 5, T.icon + ' ' + T.name + ' откроется в эпохе ' + T.epoch, '#ffd0a0');
         else sayOnce('need' + n.N.tool, 5, 'Поставь ' + T.icon + ' в кольцо (кнопка 🔄)', '#ffd0a0');
       }
       return;
     }
+    const h2 = hitR * hitR, ny = n.y - oy2;
     for (let i = 0; i < cnt; i++){
       if (S.slots[i] !== n.N.tool) continue;
-      const a = ring.angle + i * Math.PI * 2 / cnt;
-      const dx = P.x + Math.cos(a) * ring.radius - n.x, dy = P.y + Math.sin(a) * ring.radius - (n.y - oy2);
-      if (dx*dx + dy*dy < hitR*hitR){ hitNode(n, i); if (n.state !== 'alive') break; }
+      const dx = ringPos[i][0] - n.x, dy = ringPos[i][1] - ny;
+      if (dx*dx + dy*dy < h2){ hitNode(n, i); if (n.state !== 'alive') break; }
     }
   });
-  for (const n of nodes){
+  // таймеры только у тех, кому они нужны (обычно десяток, а не 4000)
+  for (let i = busyNodes.length - 1; i >= 0; i--){
+    const n = busyNodes[i];
     if (n.shake > 0) n.shake -= dt;
     if (n.showHp > 0) n.showHp -= dt;
-    if (n.state === 'alive') continue;
-    n.t += dt;
-    if (n.state === 'falling' && n.t > 0.7){ n.state = 'empty'; n.t = 0; }
-    else if (n.state === 'empty' && n.t > n.N.regrow){
-      if (!n.N.collide || Math.hypot(P.x - n.x, P.y - n.y) > P.r + n.N.collide + 10){ n.state = 'growing'; n.t = 0; }
+    if (n.state !== 'alive'){
+      n.t += dt;
+      if (n.state === 'falling' && n.t > 0.7){ n.state = 'empty'; n.t = 0; }
+      else if (n.state === 'empty' && n.t > n.N.regrow){
+        if (!n.N.collide || Math.hypot(P.x - n.x, P.y - n.y) > P.r + n.N.collide + 10){ n.state = 'growing'; n.t = 0; }
+      }
+      else if (n.state === 'growing' && n.t > 0.6){ n.state = 'alive'; n.t = 0; n.hp = n.hpNext || n.N.hp; n.hpNext = 0; n.hit = {}; }
     }
-    else if (n.state === 'growing' && n.t > 0.6){ n.state = 'alive'; n.t = 0; n.hp = n.hpNext || n.N.hp; n.hpNext = 0; n.hit = {}; }
+    // уснувшие корни и поверженное Древо больше не отрастают — их тоже убираем из списка
+    const done = (n.state === 'alive' || n.N.regrow > 1e9) && n.shake <= 0 && n.showHp <= 0 && n.state !== 'falling' && n.state !== 'growing';
+    if (done){ n.busy = false; busyNodes[i] = busyNodes[busyNodes.length - 1]; busyNodes.pop(); }
   }
   S.stats.playTime += dt;
   if (shake > 0) shake -= dt;
 
   // предметы на земле
-  const bagFull = sumRes(S.bag) >= BAG_CAP;
+  let bagN = sumRes(S.bag);
+  const bagFull = bagN >= BAG_CAP;
   for (let i = drops.length - 1; i >= 0; i--){
     const d = drops[i]; d.age += dt;
     if (d.age > 120){ drops.splice(i, 1); continue; }
     const dx = P.x - d.x, dy = P.y - d.y, dist = Math.hypot(dx, dy);
-    if (d.age > 0.4 && dist < MAGNET && sumRes(S.bag) < BAG_CAP){
+    if (d.age > 0.4 && dist < MAGNET && bagN < BAG_CAP){
       const s = 260 + (MAGNET - dist) * 6;
       d.x += dx / dist * s * dt; d.y += dy / dist * s * dt; d.z = Math.max(0, d.z - 200 * dt);
-      if (dist < P.r + 4){ drops.splice(i, 1); S.bag[d.item]++; addMade(d.item, 1); if (d.item === 'berry') S.flags.berry = true; sfxPick(); pop('bag'); continue; }
+      if (dist < P.r + 4){ drops.splice(i, 1); S.bag[d.item]++; bagN++; addMade(d.item, 1); if (d.item === 'berry') S.flags.berry = true; sfxPick(); pop('bag'); continue; }
     } else {
       if (d.age > 0.4 && dist < MAGNET && bagFull) sayOnce('bagfull', 1.5, 'Рюкзак полон!', '#ff8a7a');
       d.x += d.vx * dt; d.y += d.vy * dt; d.vx *= 0.9; d.vy *= 0.9;
@@ -2091,8 +2127,8 @@ function update(dt){
     d.rot += dt * (d.z > 0 ? 6 : 0);
   }
 
-  updatePads(dt);
-  updateHints();
+  updatePads(dt, slow);
+  if (slow) updateHints();
 
   for (let i = chips.length - 1; i >= 0; i--){
     const c = chips[i]; c.life -= dt;
@@ -2110,7 +2146,7 @@ function update(dt){
 
   const k = 1 - Math.pow(0.0015, dt);
   cam.x = lerp(cam.x, P.x, k); cam.y = lerp(cam.y, P.y, k);
-  refreshHud();
+  if (slow) refreshHud();
 }
 
 // Подсказки и цель для стрелки
@@ -2171,14 +2207,75 @@ function updateHints(){
 
 // ================== ОТРИСОВКА ==================
 const EMOJI_FONT = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+// ---- заранее посчитанное, чтобы не делать это каждый кадр ----
+const GT = 80, GTN = WORLD / GT;
+const TILE_COLOR = [];                         // цвет каждой клетки земли
+for (let i = 0; i < GTN; i++) for (let j = 0; j < GTN; j++){
+  const h = hash2(i, j), g = ZONE_GROUND[zoneAt(i * GT + GT / 2, j * GT + GT / 2)];
+  TILE_COLOR[j * GTN + i] = `hsl(${(g[0] + h * 10).toFixed(1)},${g[1]}%,${(g[2] + h * 5).toFixed(1)}%)`;
+}
+const FT = 40, FTN = WORLD / FT, FOG_ZONE = new Uint8Array(FTN * FTN);   // зона каждой клетки тумана
+for (let j = 0; j < FTN; j++) for (let i = 0; i < FTN; i++) FOG_ZONE[j * FTN + i] = zoneAt(i * FT + FT / 2, j * FT + FT / 2);
+const decorGrid = new Array(GW * GW);          // трава по участкам карты
+for (const d of decor){ const k = clamp(d.y / GRID | 0, 0, GW - 1) * GW + clamp(d.x / GRID | 0, 0, GW - 1); (decorGrid[k] || (decorGrid[k] = [])).push(d); }
+
+// ---- Земля рисуется кусками 512×512 один раз и потом просто вставляется картинкой ----
+// Перерисовываем куски, только когда открылась зона (появляются дороги) или поменялся размер экрана.
+const CHUNK = 512, CH_M = 2, CHUNK_MAX = 16, chunkCache = new Map();
+function invalidateGround(){ chunkCache.clear(); }
+function getChunk(ci, cj){
+  const key = ci * 100 + cj, sc = SCALE * DPR;
+  let c = chunkCache.get(key);
+  if (c && c.sc === sc){ chunkCache.delete(key); chunkCache.set(key, c); return c.cv; }   // свежий — в конец очереди
+  const size = CHUNK + CH_M * 2, px = Math.ceil(size * sc);
+  const cvs = document.createElement('canvas'); cvs.width = cvs.height = px;
+  const x0 = ci * CHUNK - CH_M, y0 = cj * CHUNK - CH_M, saved = ctx;
+  ctx = cvs.getContext('2d');
+  try { ctx.setTransform(sc, 0, 0, sc, -x0 * sc, -y0 * sc); drawGroundStatic(x0, y0, x0 + size, y0 + size); }
+  finally { ctx = saved; }
+  chunkCache.set(key, { cv: cvs, sc });
+  if (chunkCache.size > CHUNK_MAX) chunkCache.delete(chunkCache.keys().next().value);       // самый давний — удаляем
+  return cvs;
+}
 function drawGround(x0, y0, x1, y1){
   ctx.fillStyle = '#1b3320'; ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
-  const T = 80;
-  const i0 = Math.max(0, Math.floor(x0 / T)), i1 = Math.min(WORLD / T - 1, Math.floor(x1 / T));
-  const j0 = Math.max(0, Math.floor(y0 / T)), j1 = Math.min(WORLD / T - 1, Math.floor(y1 / T));
-  for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++){
-    const h = hash2(i, j), g = ZONE_GROUND[zoneAt(i * T + T / 2, j * T + T / 2)];
-    ctx.fillStyle = `hsl(${g[0] + h * 10},${g[1]}%,${g[2] + h * 5}%)`;
+  const n = Math.ceil(WORLD / CHUNK);
+  const ci0 = clamp(Math.floor(x0 / CHUNK), 0, n - 1), ci1 = clamp(Math.floor(x1 / CHUNK), 0, n - 1);
+  const cj0 = clamp(Math.floor(y0 / CHUNK), 0, n - 1), cj1 = clamp(Math.floor(y1 / CHUNK), 0, n - 1);
+  for (let cj = cj0; cj <= cj1; cj++) for (let ci = ci0; ci <= ci1; ci++)
+    ctx.drawImage(getChunk(ci, cj), ci * CHUNK - CH_M, cj * CHUNK - CH_M, CHUNK + CH_M * 2, CHUNK + CH_M * 2);
+  // то, что двигается, рисуем живьём: ленты конвейеров и рябь на озере
+  for (const s of SHOPS){
+    if (!S.belts[s.id]) continue;
+    const ax = s.pos.x - 60, ay = s.pos.y + 20, bx = STORE_POS.x, by = STORE_POS.y - 50;
+    if (Math.max(ax, bx) < x0 || Math.min(ax, bx) > x1 || Math.max(ay, by) < y0 || Math.min(ay, by) > y1) continue;
+    const L = Math.hypot(bx - ax, by - ay), ux = (bx - ax) / L, uy = (by - ay) / L;
+    ctx.strokeStyle = '#3a3d42'; ctx.lineWidth = 18; ctx.lineCap = 'butt'; ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+    ctx.strokeStyle = '#6b7078'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(ax - uy * 9, ay + ux * 9); ctx.lineTo(bx - uy * 9, by + ux * 9); ctx.moveTo(ax + uy * 9, ay - ux * 9); ctx.lineTo(bx + uy * 9, by - ux * 9); ctx.stroke();
+    const off = shopState[s.id].idle ? 0 : (time * 60) % 40;
+    ctx.fillStyle = '#c08a4a';
+    for (let d = off; d < L; d += 40){
+      const x = ax + ux * d, y = ay + uy * d;
+      if (x < x0 - 20 || x > x1 + 20 || y < y0 - 20 || y > y1 + 20) continue;
+      ctx.fillRect(x - 5, y - 5, 10, 10);
+    }
+  }
+  if (LAKE.x + LAKE.r > x0 && LAKE.x - LAKE.r < x1 && LAKE.y + LAKE.r > y0 && LAKE.y - LAKE.r < y1){
+    ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(LAKE.x, LAKE.y, LAKE.r - 6 + Math.sin(time * 1.5) * 3, 0, 7); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,.12)'; ctx.lineWidth = 2;
+    for (let i = 0; i < 6; i++){ const a = i * 1.1 + time * 0.05, r = 60 + i * 35; ctx.beginPath(); ctx.arc(LAKE.x, LAKE.y, r, a, a + 0.6); ctx.stroke(); }
+  }
+}
+// статичная часть земли (рисуется в кусок один раз)
+function drawGroundStatic(x0, y0, x1, y1){
+  ctx.fillStyle = '#1b3320'; ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+  const T = GT;
+  const i0 = Math.max(0, Math.floor(x0 / T)), i1 = Math.min(GTN - 1, Math.floor(x1 / T));
+  const j0 = Math.max(0, Math.floor(y0 / T)), j1 = Math.min(GTN - 1, Math.floor(y1 / T));
+  for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++){
+    ctx.fillStyle = TILE_COLOR[j * GTN + i];
     ctx.fillRect(i * T, j * T, T + 0.5, T + 0.5);
   }
   // тропинки к воротам
@@ -2199,65 +2296,49 @@ function drawGround(x0, y0, x1, y1){
     ctx.fillStyle = 'rgba(190,160,105,.45)'; ctx.beginPath(); ctx.arc(d.x, d.y + 20, 90, 0, 7); ctx.fill();
   }
   // кольцевая дорога цехов и площадки
-  if (Math.hypot(cam.x - CX, cam.y - CY) < 760 + 900){
+  if (Math.hypot((x0 + x1) / 2 - CX, (y0 + y1) / 2 - CY) < 760 + 900){
     ctx.strokeStyle = 'rgba(190,160,105,.4)'; ctx.lineWidth = 60; ctx.beginPath(); ctx.arc(CX, CY, 760, 0, 7); ctx.stroke();
     ctx.fillStyle = 'rgba(190,160,105,.45)';
     for (const sp of SHOP_SPOTS){ ctx.beginPath(); ctx.arc(sp.x - 20, sp.y + 30, 160, 0, 7); ctx.fill(); }
-    // конвейеры: лента от цеха до склада, по ней едут ящики
-    for (const s of SHOPS){
-      if (!S.belts[s.id]) continue;
-      const ax = s.pos.x - 60, ay = s.pos.y + 20, bx = STORE_POS.x, by = STORE_POS.y - 50;
-      const L = Math.hypot(bx - ax, by - ay), ux = (bx - ax) / L, uy = (by - ay) / L;
-      ctx.strokeStyle = '#3a3d42'; ctx.lineWidth = 18; ctx.lineCap = 'butt'; ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
-      ctx.strokeStyle = '#6b7078'; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(ax - uy * 9, ay + ux * 9); ctx.lineTo(bx - uy * 9, by + ux * 9); ctx.moveTo(ax + uy * 9, ay - ux * 9); ctx.lineTo(bx + uy * 9, by - ux * 9); ctx.stroke();
-      const idle = shopState[s.id].idle, off = idle ? 0 : (time * 60) % 40;
-      for (let d = off; d < L; d += 40){
-        const x = ax + ux * d, y = ay + uy * d;
-        if (x < x0 - 20 || x > x1 + 20 || y < y0 - 20 || y > y1 + 20) continue;
-        ctx.fillStyle = '#c08a4a'; ctx.fillRect(x - 5, y - 5, 10, 10);
-      }
-    }
   }
-  // озеро
-  if (Math.abs(LAKE.x - cam.x) < LAKE.r + 900 && Math.abs(LAKE.y - cam.y) < LAKE.r + 1200){
+  // озеро (без ряби — она двигается и рисуется отдельно)
+  if (LAKE.x + LAKE.r + 30 > x0 && LAKE.x - LAKE.r - 30 < x1 && LAKE.y + LAKE.r + 30 > y0 && LAKE.y - LAKE.r - 30 < y1){
     ctx.fillStyle = '#d8c28a'; ctx.beginPath(); ctx.arc(LAKE.x, LAKE.y, LAKE.r + 24, 0, 7); ctx.fill();
     const lg = ctx.createRadialGradient(LAKE.x, LAKE.y, 40, LAKE.x, LAKE.y, LAKE.r);
     lg.addColorStop(0, '#1f5f8b'); lg.addColorStop(1, '#3f8fc0');
     ctx.fillStyle = lg; ctx.beginPath(); ctx.arc(LAKE.x, LAKE.y, LAKE.r, 0, 7); ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.arc(LAKE.x, LAKE.y, LAKE.r - 6 + Math.sin(time * 1.5) * 3, 0, 7); ctx.stroke();
-    ctx.strokeStyle = 'rgba(255,255,255,.12)'; ctx.lineWidth = 2;
-    for (let i = 0; i < 6; i++){
-      const a = i * 1.1 + time * 0.05, r = 60 + i * 35;
-      ctx.beginPath(); ctx.arc(LAKE.x, LAKE.y, r, a, a + 0.6); ctx.stroke();
-    }
   }
   ctx.strokeStyle = 'rgba(0,0,0,.35)'; ctx.lineWidth = 16; ctx.strokeRect(0, 0, WORLD, WORLD);
-  for (const d of decor){
-    if (d.x < x0 || d.x > x1 || d.y < y0 || d.y > y1) continue;
-    if (d.k === 0){
-      ctx.strokeStyle = 'rgba(30,70,25,.5)'; ctx.lineWidth = 2; ctx.beginPath();
-      ctx.moveTo(d.x - 4*d.s, d.y); ctx.lineTo(d.x - 6*d.s, d.y - 7*d.s);
-      ctx.moveTo(d.x, d.y); ctx.lineTo(d.x, d.y - 9*d.s);
-      ctx.moveTo(d.x + 4*d.s, d.y); ctx.lineTo(d.x + 6*d.s, d.y - 7*d.s); ctx.stroke();
-    } else if (d.k === 3){
-      ctx.fillStyle = 'rgba(120,125,120,.6)'; ctx.beginPath(); ctx.ellipse(d.x, d.y, 4 * d.s, 2.6 * d.s, 0, 0, 7); ctx.fill();
-    } else {
-      ctx.fillStyle = d.k === 1 ? '#f4e36b' : '#f08fb0';
-      ctx.beginPath(); ctx.arc(d.x, d.y, 3 * d.s, 0, Math.PI * 2); ctx.fill();
+  // трава, камешки и цветы: только видимые участки, и каждый вид — одним вызовом рисования
+  const ci0 = clamp(x0 / GRID | 0, 0, GW - 1), ci1 = clamp(x1 / GRID | 0, 0, GW - 1);
+  const cj0 = clamp(y0 / GRID | 0, 0, GW - 1), cj1 = clamp(y1 / GRID | 0, 0, GW - 1);
+  const grass = new Path2D(), peb = new Path2D(), yel = new Path2D(), pink = new Path2D();
+  for (let cj = cj0; cj <= cj1; cj++) for (let ci = ci0; ci <= ci1; ci++){
+    const arr = decorGrid[cj * GW + ci]; if (!arr) continue;
+    for (const d of arr){
+      if (d.k === 0){
+        grass.moveTo(d.x - 4*d.s, d.y); grass.lineTo(d.x - 6*d.s, d.y - 7*d.s);
+        grass.moveTo(d.x, d.y); grass.lineTo(d.x, d.y - 9*d.s);
+        grass.moveTo(d.x + 4*d.s, d.y); grass.lineTo(d.x + 6*d.s, d.y - 7*d.s);
+      } else if (d.k === 3){ peb.moveTo(d.x + 4 * d.s, d.y); peb.ellipse(d.x, d.y, 4 * d.s, 2.6 * d.s, 0, 0, 7); }
+      else { const p = d.k === 1 ? yel : pink; p.moveTo(d.x + 3 * d.s, d.y); p.arc(d.x, d.y, 3 * d.s, 0, 7); }
     }
   }
+  ctx.strokeStyle = 'rgba(30,70,25,.5)'; ctx.lineWidth = 2; ctx.stroke(grass);
+  ctx.fillStyle = 'rgba(120,125,120,.6)'; ctx.fill(peb);
+  ctx.fillStyle = '#f4e36b'; ctx.fill(yel);
+  ctx.fillStyle = '#f08fb0'; ctx.fill(pink);
 }
 function drawFog(x0, y0, x1, y1){
-  const T = 40;
+  const T = FT;
   ctx.fillStyle = 'rgba(8,14,10,.62)';
-  const i0 = Math.max(0, Math.floor(x0 / T)), i1 = Math.min(WORLD / T - 1, Math.floor(x1 / T));
-  const j0 = Math.max(0, Math.floor(y0 / T)), j1 = Math.min(WORLD / T - 1, Math.floor(y1 / T));
+  const i0 = Math.max(0, Math.floor(x0 / T)), i1 = Math.min(FTN - 1, Math.floor(x1 / T));
+  const j0 = Math.max(0, Math.floor(y0 / T)), j1 = Math.min(FTN - 1, Math.floor(y1 / T));
+  const open = [true]; for (let z = 1; z <= 8; z++) open[z] = zoneOpen(z);
   for (let j = j0; j <= j1; j++){
     let run = -1;
     for (let i = i0; i <= i1 + 1; i++){
-      const locked = i <= i1 && lockedAt(i * T + T / 2, j * T + T / 2);
+      const locked = i <= i1 && !open[FOG_ZONE[j * FTN + i]];
       if (locked && run < 0) run = i;
       if (!locked && run >= 0){ ctx.fillRect(run * T, j * T, (i - run) * T, T + 0.5); run = -1; }
     }
@@ -2381,7 +2462,10 @@ function padInfo(p){
 }
 function drawPad(p){
   if (!p.vis) return;
-  const I = padInfo(p), x = p.x - p.w / 2, y = p.y - p.h / 2;
+  // надписи на клетке пересчитываем 5 раз в секунду, а не каждый кадр
+  if (!p.info || time >= p.infoT || p.flash > 0){ p.info = padInfo(p); p.infoT = time + 0.2; }
+  const I = p.info, x = p.x - p.w / 2, y = p.y - p.h / 2;
+  if (p.kind === 'shop' && shopLevel(p.shop)){ const st = shopState[p.shop.id]; I.prog = st.idle ? 0 : st.prog; }
   ctx.save();
   if (p.reveal && p.reveal < 1){
     const k = Math.max(0.01, easeOutBack(p.reveal));
@@ -2757,6 +2841,36 @@ function drawHeroBody(skin, st){
     const tw = (Math.sin(time * 4) + 1) / 2;                                                            // блёстка
     ctx.fillStyle = `rgba(255,255,255,${tw})`; ctx.beginPath(); ctx.arc(10, -62, 1.6, 0, 7); ctx.fill();
     eyes(); blush(); smile();
+  } else if (skin === 'fairy'){
+    // крылышки (машут), бирюзовое платье с блёстками, розовые волосы с веночком, волшебная пыльца
+    const flap = Math.sin(time * 14) * 0.25 + 0.15;
+    for (const s of [-1, 1]){
+      ctx.save(); ctx.translate(s * 6, -24); ctx.rotate(s * flap); ctx.scale(s, 1);
+      ctx.fillStyle = 'rgba(190,240,255,.55)'; ctx.strokeStyle = 'rgba(255,255,255,.8)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.ellipse(12, -10, 12, 8, -0.5, 0, 7); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(10, 4, 8, 5, 0.4, 0, 7); ctx.fill(); ctx.stroke();
+      ctx.restore();
+    }
+    legs('#f1c38e');
+    ctx.fillStyle = '#3fd0c0'; ctx.beginPath(); ctx.moveTo(-16, -2); ctx.lineTo(16, -2); ctx.lineTo(8, -26); ctx.lineTo(-8, -26); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#8af0e4';
+    for (let k = 0; k < 5; k++){ ctx.beginPath(); ctx.moveTo(-16 + k * 8, -2); ctx.lineTo(-12 + k * 8, 3); ctx.lineTo(-8 + k * 8, -2); ctx.closePath(); ctx.fill(); }
+    ctx.fillStyle = '#fff';
+    for (const [x, y] of [[-6, -10], [4, -16], [7, -7], [-2, -20], [-9, -4]]){ if (Math.sin(time * 6 + x) > 0){ ctx.beginPath(); ctx.arc(x, y, 1.2, 0, 7); ctx.fill(); } }
+    ctx.fillStyle = '#ff8fc8'; ctx.beginPath(); ctx.arc(0, -42, 13, Math.PI * 0.85, Math.PI * 2.15); ctx.fill();
+    ctx.fillRect(-13, -42, 5, 18); ctx.fillRect(8, -42, 5, 18);
+    head(); ctx.fillStyle = '#ff8fc8'; ctx.beginPath(); ctx.arc(0, -45, 11, Math.PI, 0); ctx.fill();
+    const fl = ['#ffd84a', '#fff', '#ff6fa8', '#9be7ff', '#fff'];
+    fl.forEach((c, k) => { ctx.fillStyle = c; ctx.beginPath(); ctx.arc(-9 + k * 4.5, -53 + Math.abs(k - 2) * 1.2, 2.4, 0, 7); ctx.fill(); });
+    eyes(); blush(); smile();
+    // волшебная палочка
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(13, -18); ctx.lineTo(20, -30); ctx.stroke();
+    ctx.fillStyle = '#ffd84a'; ctx.beginPath();
+    for (let k = 0; k < 10; k++){ const r = k % 2 ? 2.2 : 5, a = -Math.PI / 2 + k * Math.PI / 5 + time; ctx.lineTo(20 + Math.cos(a) * r, -33 + Math.sin(a) * r); }
+    ctx.closePath(); ctx.fill();
+    // пыльца при ходьбе
+    if (P.moving && Math.random() < 0.35) chips.push({ x: P.x + (Math.random() - .5) * 20, y: P.y, z: 30 + Math.random() * 20, vx: (Math.random() - .5) * 30, vy: 0, vz: 30,
+      life: 0.7, rot: 0, vr: 0, c: ['#fff6a8', '#9be7ff', '#ffb3e0'][Math.floor(Math.random() * 3)], w: 3 });
   } else if (skin === 'cat'){
     legs('#7d858e');
     ctx.fillStyle = '#9aa3ad'; rrect(-13, -30, 26, 26, 9); ctx.fill();                                   // худи
@@ -2853,6 +2967,7 @@ function drawWorker(w){
   if (ic){ emoji(ic, w.x + 12, w.y - 52, 15); }
 }
 // Забавные топорики (только у игрока)
+let rainbowT = -1, rainbowG = null;
 function drawFunnyAxe(skin, a){
   ctx.rotate(a * 3);
   if (skin === 'hearts'){
@@ -2873,9 +2988,11 @@ function drawFunnyAxe(skin, a){
     ctx.restore();
   } else if (skin === 'rainbow'){
     ctx.fillStyle = '#fff'; ctx.fillRect(-2.5, -15, 5, 30);
-    const g = ctx.createLinearGradient(2, -22, 16, 4), h = (time * 120) % 360;
-    for (let i = 0; i < 6; i++) g.addColorStop(i / 5, `hsl(${(h + i * 60) % 360},90%,60%)`);
-    ctx.fillStyle = g; ctx.beginPath();
+    if (rainbowT !== time){         // один градиент на кадр для всех топориков
+      rainbowT = time; rainbowG = ctx.createLinearGradient(2, -22, 16, 4); const h = (time * 120) % 360;
+      for (let i = 0; i < 6; i++) rainbowG.addColorStop(i / 5, `hsl(${(h + i * 60) % 360},90%,60%)`);
+    }
+    ctx.fillStyle = rainbowG; ctx.beginPath();
     ctx.moveTo(2, -15); ctx.lineTo(14, -20); ctx.quadraticCurveTo(18, -9, 14, 2); ctx.lineTo(2, -5); ctx.closePath(); ctx.fill();
     ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(10, -11, 1.5, 0, 7); ctx.fill();
   } else if (skin === 'candy'){
@@ -2884,7 +3001,7 @@ function drawFunnyAxe(skin, a){
     const cols = ['#ff5fa2', '#fff', '#7fd3ff', '#fff', '#ffd84a', '#fff'];
     for (let r = 12, i = 0; r > 1; r -= 2, i++){ ctx.fillStyle = cols[i % cols.length]; ctx.beginPath(); ctx.arc(0, 0, r, 0, 7); ctx.fill(); }
     ctx.strokeStyle = 'rgba(255,95,162,.8)'; ctx.lineWidth = 2; ctx.beginPath();
-    for (let k = 0; k < 40; k++){ const ang = k * 0.5 + time * 3, rr = k * 0.28; const x = Math.cos(ang) * rr, y = Math.sin(ang) * rr; k ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+    for (let k = 0; k < 14; k++){ const ang = k * 1.3 + time * 3, rr = k * 0.8; const x = Math.cos(ang) * rr, y = Math.sin(ang) * rr; k ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
     ctx.stroke(); ctx.restore();
   }
 }
@@ -3260,7 +3377,7 @@ $('replayEnd').addEventListener('click', () => { $('dbg').classList.remove('open
 $('replayEnd').style.display = S.won ? '' : 'none';
 $('reset').addEventListener('click', () => {
   if (!confirm('Точно стереть весь прогресс?')) return;
-  S = freshState(); applyStats(); refreshEpoch(); save(); miniBase = null; rebuildWorkers(); restoreBoss();
+  S = freshState(); applyStats(); refreshEpoch(); save(); miniBase = null; invalidateGround(); rebuildWorkers(); restoreBoss();
   P.x = CX; P.y = CY + 5; cam.x = P.x; cam.y = P.y; drops.length = 0; $('dbg').classList.remove('open');
 });
 
@@ -3379,7 +3496,7 @@ function frame(now){
   const dt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now;
   try {
     update(dt); render(); booted = true;
-    miniT -= dt; if (miniT <= 0){ miniT = 0.15; drawMini(); }
+    miniT -= dt; if (miniT <= 0){ miniT = 0.3; drawMini(); }
   } catch(e){
     console.error(e);
     if (!frameErrShown){ frameErrShown = true; banner('⚠️ Что-то пошло не так', 'Игра продолжает работать. Если повторится — отправь скриншот: ' + String(e && e.message).slice(0, 80)); }
