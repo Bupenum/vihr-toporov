@@ -1,0 +1,843 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1b3320">
+<meta name="apple-mobile-web-app-title" content="Вихрь топоров">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<title>Вихрь топоров</title>
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;background:#1b3320;touch-action:none;
+    -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;
+    font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#fff}
+  canvas{display:block;position:fixed;inset:0;width:100%;height:100%}
+  .pill{position:fixed;background:rgba(0,0,0,.45);border-radius:999px;padding:6px 14px;font-weight:700;font-size:18px;
+    display:flex;align-items:center;gap:6px;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);transition:transform .12s,background .2s}
+  .pill.pop{transform:scale(1.15)}
+  #coins{top:calc(env(safe-area-inset-top) + 10px);left:12px}
+  #bag{top:calc(env(safe-area-inset-top) + 54px);left:12px;font-size:15px}
+  #bag.full{background:rgba(200,40,30,.75)}
+  #epoch{top:calc(env(safe-area-inset-top) + 10px);left:50%;transform:translateX(-50%);font-size:13px;opacity:.85}
+  #dbgBtn{top:calc(env(safe-area-inset-top) + 10px);right:12px;border:0;color:#fff;font-size:18px;cursor:pointer}
+  #dbg{position:fixed;top:calc(env(safe-area-inset-top) + 56px);right:12px;background:rgba(0,0,0,.75);border-radius:14px;
+    padding:10px 12px;display:none;font-size:14px;min-width:190px}
+  #dbg.open{display:block}
+  #dbg .t{opacity:.6;font-size:12px;margin-bottom:6px}
+  #dbg button{display:block;width:100%;margin:6px 0;background:#3d7f45;border:0;color:#fff;font-size:15px;font-weight:700;padding:8px;border-radius:8px}
+  #dbg button.red{background:#9b2c2c}
+  #hint{position:fixed;left:16px;right:16px;bottom:calc(env(safe-area-inset-bottom) + 70px);text-align:center;font-size:17px;
+    font-weight:600;text-shadow:0 2px 6px rgba(0,0,0,.7);transition:opacity .6s;pointer-events:none}
+  #banner{position:fixed;left:50%;top:30%;transform:translate(-50%,-50%) scale(.8);background:rgba(0,0,0,.75);padding:16px 22px;
+    border-radius:18px;text-align:center;font-size:22px;font-weight:800;opacity:0;transition:opacity .4s,transform .4s;pointer-events:none;max-width:80vw}
+  #banner small{display:block;font-size:14px;font-weight:500;opacity:.8;margin-top:6px}
+  #banner.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  #dbg .info{font-size:12px;line-height:1.4;opacity:.85;margin-top:8px;max-width:210px}
+  #modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:10;padding:16px}
+  #modal.open{display:flex}
+  #modal .box{background:#24392a;border-radius:16px;padding:16px;width:100%;max-width:420px;box-sizing:border-box}
+  #modal h3{margin:0 0 8px;font-size:18px}
+  #modal p{margin:0 0 10px;font-size:13px;opacity:.85;line-height:1.4}
+  #modal textarea{width:100%;height:120px;box-sizing:border-box;border-radius:10px;border:0;padding:8px;font-size:12px;
+    font-family:ui-monospace,Menlo,monospace;-webkit-user-select:text;user-select:text;touch-action:auto;background:#0f1c13;color:#cfe8d0}
+  #modal .btns{display:flex;gap:8px;margin-top:10px}
+  #modal .btns button{flex:1;border:0;border-radius:10px;padding:10px;font-size:15px;font-weight:700;color:#fff;background:#3d7f45}
+  #modal .btns button.gray{background:#555}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="coins" class="pill">💰 <span id="coinN">0</span></div>
+<div id="bag" class="pill">🎒 <span id="bagN">0/10</span></div>
+<div id="epoch" class="pill">Эпоха 1 · Лагерь</div>
+<button id="dbgBtn" class="pill">⚙️</button>
+<div id="dbg">
+  <div class="t">Настройки</div>
+  <button id="snd">🔊 Звук: вкл</button>
+  <button id="exportBtn">📤 Экспорт сохранения</button>
+  <button id="importBtn">📥 Загрузить сохранение</button>
+  <button id="cheat">+1000 💰 (тест)</button>
+  <button id="reset" class="red">Сбросить прогресс</button>
+  <div class="info" id="installInfo"></div>
+</div>
+<div id="modal"><div class="box">
+  <h3 id="mTitle"></h3>
+  <p id="mText"></p>
+  <textarea id="mArea" spellcheck="false" autocomplete="off"></textarea>
+  <div class="btns"><button id="mOk"></button><button id="mClose" class="gray">Закрыть</button></div>
+</div></div>
+<div id="hint">Веди пальцем по экрану, чтобы идти</div>
+<div id="banner"></div>
+
+<script>
+"use strict";
+// ================== БАЗА ==================
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+let W, H, DPR, SCALE;
+let coinTarget = { x: 40, y: 28 };
+function resize(){
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  W = innerWidth; H = innerHeight;
+  cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+  SCALE = Math.min(W, H) / 420;          // короткая сторона экрана = 420 единиц мира
+  const r = document.getElementById('coins').getBoundingClientRect();
+  coinTarget = { x: r.left + 22, y: r.top + r.height / 2 };
+}
+addEventListener('resize', resize);
+
+function rng(seed){ return function(){ seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+  let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+  return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const R = rng(20261108);
+function hash2(i, j){ let n = Math.imul(i, 374761393) + Math.imul(j, 668265263); n = Math.imul(n ^ (n >>> 13), 1274126177);
+  return ((n ^ (n >>> 16)) >>> 0) / 4294967296; }
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const lerp = (a, b, t) => a + (b - a) * t;
+const easeOutBack = t => { const c = 1.70158; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); };
+function fmt(n){
+  n = Math.floor(n);
+  if (n < 10000) return String(n);
+  if (n < 1e6) return (n / 1e3).toFixed(n < 1e5 ? 1 : 0) + 'K';
+  if (n < 1e9) return (n / 1e6).toFixed(n < 1e8 ? 1 : 0) + 'M';
+  return (n / 1e9).toFixed(1) + 'B';
+}
+
+// ================== ДАННЫЕ ИГРЫ ==================
+const WORLD = 3200, CX = WORLD / 2, CY = WORLD / 2, BASE_R = 240;
+const TYPES = {
+  birch: { name:'Берёза', hp:3,  logs:1, price:1, regrow:8,  size:1,    trunk:'#ece7da', log:'#e7e0cf', crown:['#5f9e3e','#78b84f','#98d06a'] },
+  pine:  { name:'Сосна',  hp:15, logs:3, price:5, regrow:14, size:1.25, trunk:'#7a5230', log:'#8a5a33', crown:['#285e33','#357440','#468a4d'] },
+};
+const STORE_CAP = 300;
+const HALL_COST = { logs: 200, coins: 1000 };
+
+// Апгрейды кольца и персонажа. cost(l) — цена перехода с уровня l на l+1.
+const UPG = {
+  count:  { name:'Топоры',   icon:'🪓', max:8,  cost:l => [60,300,1500,6000,25000,90000,300000,1000000][l], val:l => 2 + l,               show:v => v + ' шт' },
+  dmg:    { name:'Острота',  icon:'🔪', max:40, cost:l => Math.round(25 * Math.pow(1.22, l)),               val:l => 1 + l,               show:v => 'урон ' + v },
+  speed:  { name:'Вращение', icon:'🌀', max:15, cost:l => Math.round(40 * Math.pow(1.32, l)),               val:l => 1 + 0.1 * l,         show:v => v.toFixed(1) + ' об/с' },
+  radius: { name:'Размах',   icon:'⭕', max:10, cost:l => Math.round(50 * Math.pow(1.35, l)),               val:l => 62 + 6 * l,          show:v => Math.round(v / 40 * 10) / 10 + ' кл' },
+  bag:    { name:'Рюкзак',   icon:'🎒', max:20, cost:l => Math.round(20 * Math.pow(1.3, l)),                val:l => Math.min(500, 10 + 8 * l + l * l), show:v => v + ' мест' },
+  move:   { name:'Сапоги',   icon:'👢', max:16, cost:l => Math.round(45 * Math.pow(1.3, l)),                val:l => 175 * (1 + 0.05 * l), show:v => Math.round(v / 1.75) + '%' },
+  magnet: { name:'Магнит',   icon:'🧲', max:10, cost:l => Math.round(35 * Math.pow(1.3, l)),                val:l => 110 + 15 * l,        show:v => Math.round(v / 40 * 10) / 10 + ' кл' },
+};
+
+// Сохраняемое состояние
+const SAVE_KEY = 'vihr_toporov_save_v1';
+function freshState(){
+  return { coins: 0, bag: { birch:0, pine:0 }, store: { birch:0, pine:0 }, epoch: 1,
+           lv: { count:0, dmg:0, speed:0, radius:0, bag:0, move:0, magnet:0 },
+           stats: { felled:0, earned:0 }, flags: {} };
+}
+let S = freshState();
+try {
+  const raw = localStorage.getItem(SAVE_KEY);
+  if (raw){ const d = JSON.parse(raw); S = Object.assign(freshState(), d); S.lv = Object.assign(freshState().lv, d.lv);
+    S.bag = Object.assign(freshState().bag, d.bag); S.store = Object.assign(freshState().store, d.store); }
+} catch(_){}
+function save(){ try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch(_){} }
+setInterval(save, 5000);
+document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
+addEventListener('pagehide', save);
+
+const sumRes = o => { let s = 0; for (const k in o) s += o[k]; return s; };
+const valueOf = o => { let s = 0; for (const k in o) s += o[k] * TYPES[k].price; return s; };
+
+// ================== МИР ==================
+const trees = [];
+function makeTree(x, y, type){
+  const T = TYPES[type];
+  return { x, y, type, T, hp:T.hp, state:'alive', t:0, shake:0, hit:{}, fallDir:1, showHp:0 };
+}
+function forestNoise(x, y){
+  return Math.sin(x*0.004) + Math.sin(y*0.005 + 1.3) + Math.sin((x + y)*0.003 + 2.1) + Math.sin((x - y)*0.0065);
+}
+for (let gx = 70; gx < WORLD - 70; gx += 64){
+  for (let gy = 70; gy < WORLD - 70; gy += 64){
+    const x = gx + (R() - .5) * 44, y = gy + (R() - .5) * 44;
+    const d = Math.hypot(x - CX, y - CY);
+    if (d < BASE_R + 30) continue;
+    if (forestNoise(x, y) + R() * 1.4 < 0.2) continue;
+    const type = d < 1000 ? (R() < 0.92 ? 'birch' : 'pine') : (R() < 0.2 ? 'birch' : 'pine');
+    trees.push(makeTree(x, y, type));
+  }
+}
+const decor = [];
+for (let i = 0; i < 4000; i++){
+  const x = R() * WORLD, y = R() * WORLD;
+  if (Math.hypot(x - CX, y - CY) < BASE_R - 20) continue;
+  decor.push({ x, y, k: R() < 0.82 ? 0 : (R() < 0.5 ? 1 : 2), s: 0.7 + R() * 0.6 });
+}
+
+// Клетки на базе
+const pads = [
+  { kind:'hall',   x:CX,       y:CY - 155, w:120, h:86 },
+  { kind:'market', x:CX - 140, y:CY - 40,  w:86,  h:86 },
+  { kind:'store',  x:CX + 140, y:CY - 40,  w:86,  h:86 },
+  { kind:'upg', key:'count',  x:CX - 165, y:CY + 68,  w:88, h:88 },
+  { kind:'upg', key:'dmg',    x:CX - 55,  y:CY + 68,  w:88, h:88 },
+  { kind:'upg', key:'speed',  x:CX + 55,  y:CY + 68,  w:88, h:88 },
+  { kind:'upg', key:'radius', x:CX + 165, y:CY + 68,  w:88, h:88 },
+  { kind:'upg', key:'bag',    x:CX - 110, y:CY + 172, w:88, h:88 },
+  { kind:'upg', key:'move',   x:CX,       y:CY + 172, w:88, h:88 },
+  { kind:'upg', key:'magnet', x:CX + 110, y:CY + 172, w:88, h:88 },
+];
+for (const p of pads){ p.hold = 0; p.tick = 0; p.inside = false; p.flash = 0; }
+
+// ================== ИГРОК И КОЛЬЦО ==================
+const P = { x: CX, y: CY + 10, r: 16, speed: 175, face: 0, walk: 0, moving: false };
+const ring = { count: 2, radius: 62, speed: 1, dmg: 1, angle: 0 };
+let MAGNET = 110, BAG_CAP = 10;
+const AXE_R = 14;
+function applyStats(){
+  ring.count  = UPG.count.val(S.lv.count);
+  ring.dmg    = UPG.dmg.val(S.lv.dmg);
+  ring.speed  = UPG.speed.val(S.lv.speed);
+  ring.radius = UPG.radius.val(S.lv.radius);
+  BAG_CAP     = UPG.bag.val(S.lv.bag);
+  P.speed     = UPG.move.val(S.lv.move);
+  MAGNET      = UPG.magnet.val(S.lv.magnet);
+}
+applyStats();
+const cam = { x: P.x, y: P.y };
+
+// ================== ВВОД ==================
+const joy = { active:false, id:null, ox:0, oy:0, x:0, y:0 };
+const JOY_MAX = 55;
+let moved = false;
+cv.addEventListener('pointerdown', e => {
+  unlockAudio();
+  if (joy.active) return;
+  joy.active = true; joy.id = e.pointerId;
+  joy.ox = joy.x = e.clientX; joy.oy = joy.y = e.clientY;
+  try { cv.setPointerCapture(e.pointerId); } catch(_){}
+});
+cv.addEventListener('pointermove', e => { if (joy.active && e.pointerId === joy.id){ joy.x = e.clientX; joy.y = e.clientY; } });
+const endJoy = e => { if (e.pointerId === joy.id){ joy.active = false; joy.id = null; } };
+cv.addEventListener('pointerup', endJoy); cv.addEventListener('pointercancel', endJoy);
+document.addEventListener('touchmove', e => { if (!e.target.closest || !e.target.closest('#modal')) e.preventDefault(); }, { passive:false });
+document.addEventListener('gesturestart', e => e.preventDefault());
+document.addEventListener('dblclick', e => e.preventDefault());
+
+const keys = {};
+addEventListener('keydown', e => { keys[e.key.toLowerCase()] = true; unlockAudio(); });
+addEventListener('keyup',   e => { keys[e.key.toLowerCase()] = false; });
+
+function inputVec(){
+  let x = 0, y = 0;
+  if (joy.active){
+    let dx = joy.x - joy.ox, dy = joy.y - joy.oy, len = Math.hypot(dx, dy);
+    if (len > 6){ const m = Math.min(1, len / JOY_MAX); x = dx / len * m; y = dy / len * m; }
+  }
+  if (keys['w'] || keys['arrowup'] || keys['ц']) y -= 1;
+  if (keys['s'] || keys['arrowdown'] || keys['ы']) y += 1;
+  if (keys['a'] || keys['arrowleft'] || keys['ф']) x -= 1;
+  if (keys['d'] || keys['arrowright'] || keys['в']) x += 1;
+  const l = Math.hypot(x, y); if (l > 1){ x /= l; y /= l; }
+  return { x, y };
+}
+
+// ================== ЗВУК ==================
+let AC = null, noiseBuf = null, soundOn = true;
+const sfxLast = {};
+function unlockAudio(){
+  if (!AC){
+    try {
+      AC = new (window.AudioContext || window.webkitAudioContext)();
+      noiseBuf = AC.createBuffer(1, AC.sampleRate * 0.5, AC.sampleRate);
+      const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    } catch(_){ AC = null; }
+  }
+  if (AC && AC.state === 'suspended') AC.resume();
+}
+function canPlay(name, gap){
+  if (!AC || !soundOn) return false; const t = AC.currentTime;
+  if (sfxLast[name] && t - sfxLast[name] < gap) return false; sfxLast[name] = t; return true;
+}
+function noise(t0, dur, freq, q, vol, type){
+  const s = AC.createBufferSource(); s.buffer = noiseBuf;
+  const f = AC.createBiquadFilter(); f.type = type || 'bandpass'; f.frequency.value = freq; f.Q.value = q;
+  const g = AC.createGain(); g.gain.setValueAtTime(vol, t0); g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+  s.connect(f).connect(g).connect(AC.destination); s.start(t0); s.stop(t0 + dur + 0.02);
+}
+function tone(t0, dur, f0, f1, vol, type){
+  const o = AC.createOscillator(); o.type = type || 'sine';
+  o.frequency.setValueAtTime(f0, t0); o.frequency.exponentialRampToValueAtTime(f1, t0 + dur);
+  const g = AC.createGain(); g.gain.setValueAtTime(vol, t0); g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+  o.connect(g).connect(AC.destination); o.start(t0); o.stop(t0 + dur + 0.02);
+}
+function sfxHit(){ if (!canPlay('hit', 0.045)) return; const t = AC.currentTime;
+  tone(t, 0.08, 260 + Math.random()*90, 80, 0.16, 'triangle'); noise(t, 0.06, 1700 + Math.random()*500, 1.2, 0.22); }
+function sfxFall(){ if (!canPlay('fall', 0.1)) return; const t = AC.currentTime;
+  noise(t, 0.25, 900, 0.8, 0.25); tone(t + 0.25, 0.35, 130, 38, 0.35); noise(t + 0.25, 0.3, 300, 0.7, 0.3, 'lowpass'); }
+function sfxPick(){ if (!canPlay('pick', 0.03)) return; const t = AC.currentTime; tone(t, 0.09, 700 + Math.random()*100, 1250, 0.07); }
+function sfxCoin(){ if (!canPlay('coin', 0.06)) return; const t = AC.currentTime;
+  tone(t, 0.06, 1320, 1320, 0.08, 'square'); tone(t + 0.06, 0.12, 1760, 1760, 0.07, 'square'); }
+function sfxDrop(){ if (!canPlay('drop', 0.06)) return; const t = AC.currentTime; tone(t, 0.08, 300, 180, 0.12, 'triangle'); }
+function sfxBuy(){ if (!canPlay('buy', 0.1)) return; const t = AC.currentTime;
+  [523, 659, 784, 1047].forEach((f, i) => tone(t + i * 0.06, 0.14, f, f, 0.09, 'triangle')); }
+function sfxNo(){ if (!canPlay('no', 0.5)) return; const t = AC.currentTime; tone(t, 0.18, 200, 120, 0.12, 'sawtooth'); }
+function sfxEpoch(){ if (!AC || !soundOn) return; const t = AC.currentTime;
+  [392, 523, 659, 784, 1047, 1319].forEach((f, i) => tone(t + i * 0.1, 0.35, f, f, 0.1, 'triangle')); }
+function vibrate(ms){ try { if (navigator.vibrate) navigator.vibrate(ms); } catch(_){} }
+
+// ================== ИНТЕРФЕЙС ==================
+const $ = id => document.getElementById(id);
+function pop(id){ const el = $(id); el.classList.add('pop'); setTimeout(() => el.classList.remove('pop'), 120); }
+let shownCoins = -1, shownBag = '';
+function refreshHud(){
+  if (shownCoins !== Math.floor(S.coins)){ shownCoins = Math.floor(S.coins); $('coinN').textContent = fmt(S.coins); }
+  const b = sumRes(S.bag) + '/' + BAG_CAP;
+  if (b !== shownBag){ shownBag = b; $('bagN').textContent = b; $('bag').classList.toggle('full', sumRes(S.bag) >= BAG_CAP); }
+}
+function setHint(text){ const h = $('hint'); if (!text){ h.style.opacity = 0; return; } h.textContent = text; h.style.opacity = 1; }
+let bannerTimer = 0;
+function banner(title, sub){
+  const b = $('banner'); b.innerHTML = title + (sub ? '<small>' + sub + '</small>' : '');
+  b.classList.add('show'); clearTimeout(bannerTimer); bannerTimer = setTimeout(() => b.classList.remove('show'), 3500);
+}
+const EPOCH_NAMES = ['', 'Лагерь', 'Хутор', 'Деревня', 'Посёлок', 'Город'];
+function refreshEpoch(){ $('epoch').textContent = 'Эпоха ' + S.epoch + ' · ' + EPOCH_NAMES[S.epoch]; }
+refreshEpoch();
+
+// ================== ЭФФЕКТЫ ==================
+const chips = [], texts = [], drops = [], flyCoins = [], flyLogs = [];
+function spawnChips(x, y, color, n){
+  for (let i = 0; i < n; i++){
+    const a = Math.random() * Math.PI * 2, s = 60 + Math.random() * 120;
+    chips.push({ x, y, z: 20 + Math.random()*15, vx: Math.cos(a)*s, vy: Math.sin(a)*s*0.6, vz: 120 + Math.random()*140,
+      life: 0.6 + Math.random()*0.4, rot: Math.random()*6, vr: (Math.random()-.5)*20, c: color, w: 3 + Math.random()*3 });
+  }
+}
+function spawnText(x, y, txt, color, size){ texts.push({ x: x + (Math.random()-.5)*16, y, txt, c: color || '#fff', life: 0.9, size: size || 16 }); }
+const textCd = {};
+function sayOnce(key, gap, txt, color){
+  if (textCd[key] && time - textCd[key] < gap) return; textCd[key] = time;
+  spawnText(P.x, P.y - 80, txt, color || '#fff', 15);
+}
+function spawnLogs(tr){
+  for (let i = 0; i < tr.T.logs; i++){
+    const a = Math.random() * Math.PI * 2, s = 50 + Math.random() * 80;
+    drops.push({ x: tr.x, y: tr.y, z: 10, vx: Math.cos(a)*s, vy: Math.sin(a)*s, vz: 160 + Math.random()*80, age: 0, rot: Math.random()*3, kind: tr.type });
+  }
+  if (drops.length > 400) drops.splice(0, drops.length - 400);
+}
+function worldToScreen(x, y){ return { x: (x - cam.x) * SCALE + W / 2, y: (y - cam.y) * SCALE + H / 2 }; }
+function spawnFlyCoins(n){
+  const s = worldToScreen(P.x, P.y - 30);
+  for (let i = 0; i < n; i++) flyCoins.push({ x: s.x + (Math.random()-.5)*30, y: s.y + (Math.random()-.5)*30, t: -i * 0.03, sx: 0, sy: 0 });
+}
+
+// ================== ЛОГИКА ==================
+let time = 0;
+function hitTree(tr, axeIdx){
+  if (tr.hit[axeIdx] && time - tr.hit[axeIdx] < 0.3) return;
+  tr.hit[axeIdx] = time;
+  tr.hp -= ring.dmg; tr.shake = 0.18; tr.showHp = 2.2;
+  spawnChips(tr.x, tr.y - 14, tr.type === 'birch' ? '#e8e0cc' : '#a87a4a', 4);
+  spawnText(tr.x, tr.y - 70 * tr.T.size, '-' + ring.dmg);
+  sfxHit();
+  if (tr.hp <= 0){
+    tr.state = 'falling'; tr.t = 0; tr.fallDir = (tr.x >= P.x) ? 1 : -1;
+    spawnChips(tr.x, tr.y - 30, tr.T.crown[1], 12);
+    spawnLogs(tr); sfxFall(); vibrate(18); S.stats.felled++;
+  }
+}
+
+// Забрать n брёвен из объекта ресурсов (сначала дорогие). Возвращает {type: count}
+function takeRes(from, n){
+  const out = {};
+  for (const k of ['pine', 'birch']){
+    if (n <= 0) break; const t = Math.min(from[k], n);
+    if (t > 0){ from[k] -= t; out[k] = t; n -= t; }
+  }
+  return out;
+}
+
+function sellTick(){
+  const total = sumRes(S.bag); if (!total) return false;
+  const n = Math.max(1, Math.ceil(total / 18));
+  const got = takeRes(S.bag, n), v = valueOf(got);
+  S.coins += v; S.stats.earned += v;
+  spawnFlyCoins(Math.min(4, n)); sfxCoin(); pop('coins');
+  spawnText(P.x + 20, P.y - 70, '+' + fmt(v), '#ffd84a', 15);
+  if (!S.flags.sold){ S.flags.sold = true; }
+  return true;
+}
+function storeTick(pad){
+  const total = sumRes(S.bag); if (!total) return false;
+  const space = STORE_CAP - sumRes(S.store);
+  if (space <= 0){ sayOnce('storefull', 1.5, 'Склад полон!', '#ff8a7a'); sfxNo(); return false; }
+  const n = Math.min(space, Math.max(1, Math.ceil(total / 18)));
+  const got = takeRes(S.bag, n);
+  for (const k in got){ S.store[k] += got[k]; flyLogs.push({ x: P.x, y: P.y - 40, tx: pad.x, ty: pad.y, t: 0, kind: k }); }
+  sfxDrop(); return true;
+}
+function tryUpgrade(pad){
+  const U = UPG[pad.key], l = S.lv[pad.key];
+  if (l >= U.max){ sayOnce('max' + pad.key, 1.5, 'Максимум!', '#9fe0ff'); return; }
+  const c = U.cost(l);
+  if (S.coins < c){ sayOnce('nomoney', 1.2, 'Не хватает 💰', '#ff8a7a'); sfxNo(); return; }
+  S.coins -= c; S.lv[pad.key]++; applyStats(); pad.flash = 0.4;
+  sfxBuy(); pop('coins');
+  spawnText(pad.x, pad.y - 50, U.icon + ' ' + U.show(U.val(S.lv[pad.key])), '#b6ff8a', 17);
+  spawnChips(pad.x, pad.y, '#ffd84a', 10);
+  save();
+}
+function tryHall(pad){
+  if (S.epoch >= 2){ sayOnce('hallnext', 2, 'Следующая эпоха — скоро!', '#9fe0ff'); return; }
+  const logs = sumRes(S.store);
+  if (logs < HALL_COST.logs || S.coins < HALL_COST.coins){
+    const need = [];
+    if (logs < HALL_COST.logs) need.push((HALL_COST.logs - logs) + ' 🪵 на складе');
+    if (S.coins < HALL_COST.coins) need.push(fmt(HALL_COST.coins - S.coins) + ' 💰');
+    sayOnce('hallneed', 2, 'Нужно ещё: ' + need.join(' и '), '#ffd0a0'); sfxNo(); return;
+  }
+  takeRes(S.store, HALL_COST.logs); S.coins -= HALL_COST.coins; S.epoch = 2;
+  pad.flash = 1; refreshEpoch(); sfxEpoch(); vibrate(60);
+  for (let i = 0; i < 4; i++) spawnChips(pad.x + (Math.random()-.5)*80, pad.y, ['#ffd84a','#ff7a59','#7ad3ff','#b6ff8a'][i], 14);
+  banner('🏛️ Эпоха 2 · Хутор!', 'Жители, кирка и новые постройки появятся в следующих версиях');
+  save();
+}
+
+function updatePads(dt){
+  for (const p of pads){
+    if (p.flash > 0) p.flash -= dt;
+    const inside = Math.abs(P.x - p.x) < p.w / 2 && Math.abs(P.y - p.y) < p.h / 2;
+    if (!inside){ p.hold = 0; p.inside = false; continue; }
+    p.inside = true; p.hold += dt;
+    if (p.kind === 'market' || p.kind === 'store'){
+      if (p.hold < 0.15) continue;
+      p.tick -= dt;
+      if (p.tick <= 0){ p.tick = 0.06; p.kind === 'market' ? sellTick() : storeTick(p); }
+    } else if (p.hold >= 0.6){
+      p.kind === 'hall' ? tryHall(p) : tryUpgrade(p);
+      p.hold = p.kind === 'hall' ? -1.5 : 0.3;     // повтор покупки, пока стоишь
+    }
+  }
+}
+
+function update(dt){
+  time += dt;
+  const iv = inputVec();
+  P.moving = Math.hypot(iv.x, iv.y) > 0.05;
+  if (P.moving){
+    if (!moved){ moved = true; setHint(''); }
+    P.x += iv.x * P.speed * dt; P.y += iv.y * P.speed * dt;
+    P.face = Math.atan2(iv.y, iv.x); P.walk += dt * 10 * Math.hypot(iv.x, iv.y);
+  }
+  for (const tr of trees){
+    if (tr.state !== 'alive' && tr.state !== 'growing') continue;
+    const dx = P.x - tr.x, dy = P.y - tr.y; if (Math.abs(dx) > 40 || Math.abs(dy) > 40) continue;
+    const minD = P.r + 9 * tr.T.size, d = Math.hypot(dx, dy);
+    if (d < minD && d > 0.001){ P.x = tr.x + dx / d * minD; P.y = tr.y + dy / d * minD; }
+  }
+  P.x = clamp(P.x, 30, WORLD - 30); P.y = clamp(P.y, 30, WORLD - 30);
+
+  // кольцо топоров
+  ring.angle += ring.speed * Math.PI * 2 * dt;
+  const reach = ring.radius + AXE_R + 30;
+  for (const tr of trees){
+    if (tr.state !== 'alive') continue;
+    if (Math.abs(tr.x - P.x) > reach || Math.abs(tr.y - P.y) > reach) continue;
+    const hitR = AXE_R + 16 * tr.T.size;
+    for (let i = 0; i < ring.count; i++){
+      const a = ring.angle + i * Math.PI * 2 / ring.count;
+      const ax = P.x + Math.cos(a) * ring.radius, ay = P.y + Math.sin(a) * ring.radius;
+      const dx = ax - tr.x, dy = ay - (tr.y - 8);
+      if (dx*dx + dy*dy < hitR*hitR){ hitTree(tr, i); if (tr.state !== 'alive') break; }
+    }
+  }
+  for (const tr of trees){
+    if (tr.shake > 0) tr.shake -= dt;
+    if (tr.showHp > 0) tr.showHp -= dt;
+    if (tr.state === 'alive') continue;
+    tr.t += dt;
+    if (tr.state === 'falling' && tr.t > 0.7){ tr.state = 'stump'; tr.t = 0; }
+    else if (tr.state === 'stump' && tr.t > tr.T.regrow){
+      if (Math.hypot(P.x - tr.x, P.y - tr.y) > 40){ tr.state = 'growing'; tr.t = 0; }
+    }
+    else if (tr.state === 'growing' && tr.t > 0.6){ tr.state = 'alive'; tr.t = 0; tr.hp = tr.T.hp; tr.hit = {}; }
+  }
+
+  // брёвна на земле
+  const bagFull = sumRes(S.bag) >= BAG_CAP;
+  for (let i = drops.length - 1; i >= 0; i--){
+    const d = drops[i]; d.age += dt;
+    if (d.age > 120){ drops.splice(i, 1); continue; }
+    const dx = P.x - d.x, dy = P.y - d.y, dist = Math.hypot(dx, dy);
+    if (d.age > 0.4 && dist < MAGNET && sumRes(S.bag) < BAG_CAP){
+      const s = 260 + (MAGNET - dist) * 6;
+      d.x += dx / dist * s * dt; d.y += dy / dist * s * dt; d.z = Math.max(0, d.z - 200 * dt);
+      if (dist < P.r + 4){ drops.splice(i, 1); S.bag[d.kind]++; sfxPick(); pop('bag'); continue; }
+    } else {
+      if (d.age > 0.4 && dist < MAGNET && bagFull) sayOnce('bagfull', 1.5, 'Рюкзак полон!', '#ff8a7a');
+      d.x += d.vx * dt; d.y += d.vy * dt; d.vx *= 0.9; d.vy *= 0.9;
+      d.vz -= 600 * dt; d.z += d.vz * dt; if (d.z < 0){ d.z = 0; d.vz = -d.vz * 0.35; }
+    }
+    d.rot += dt * (d.z > 0 ? 6 : 0);
+  }
+
+  updatePads(dt);
+
+  // подсказки
+  if (moved){
+    if (!S.flags.sold && sumRes(S.bag) >= BAG_CAP) setHint('Рюкзак полон! Неси брёвна на рынок 💰 (база в центре)');
+    else if (S.flags.sold && !S.flags.bought && S.coins >= UPG.count.cost(0)) setHint('Встань на клетку 🪓, чтобы купить третий топор');
+    else setHint('');
+    if (S.lv.count > 0) S.flags.bought = true;
+  }
+
+  // эффекты
+  for (let i = chips.length - 1; i >= 0; i--){
+    const c = chips[i]; c.life -= dt;
+    c.x += c.vx * dt; c.y += c.vy * dt; c.vz -= 700 * dt; c.z += c.vz * dt; c.rot += c.vr * dt;
+    if (c.z < 0){ c.z = 0; c.vz *= -0.3; c.vx *= 0.6; c.vy *= 0.6; c.vr *= 0.5; }
+    if (c.life <= 0) chips.splice(i, 1);
+  }
+  for (let i = texts.length - 1; i >= 0; i--){ const t = texts[i]; t.life -= dt; t.y -= 40 * dt; if (t.life <= 0) texts.splice(i, 1); }
+  for (let i = flyCoins.length - 1; i >= 0; i--){
+    const c = flyCoins[i];
+    if (c.t <= 0 && c.t + dt > 0){ c.sx = c.x; c.sy = c.y; }
+    c.t += dt; if (c.t >= 0.5) flyCoins.splice(i, 1);
+  }
+  for (let i = flyLogs.length - 1; i >= 0; i--){ const f = flyLogs[i]; f.t += dt * 2.5; if (f.t >= 1) flyLogs.splice(i, 1); }
+
+  const k = 1 - Math.pow(0.0015, dt);
+  cam.x = lerp(cam.x, P.x, k); cam.y = lerp(cam.y, P.y, k);
+  refreshHud();
+}
+
+// ================== ОТРИСОВКА ==================
+const EMOJI_FONT = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+function drawGround(x0, y0, x1, y1){
+  ctx.fillStyle = '#1b3320'; ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+  const T = 80;
+  const i0 = Math.max(0, Math.floor(x0 / T)), i1 = Math.min(WORLD / T - 1, Math.floor(x1 / T));
+  const j0 = Math.max(0, Math.floor(y0 / T)), j1 = Math.min(WORLD / T - 1, Math.floor(y1 / T));
+  for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++){
+    const h = hash2(i, j);
+    ctx.fillStyle = `hsl(${100 + h * 10},38%,${34 + h * 5}%)`;
+    ctx.fillRect(i * T, j * T, T + 0.5, T + 0.5);
+  }
+  const g = ctx.createRadialGradient(CX, CY, BASE_R * 0.5, CX, CY, BASE_R + 20);
+  g.addColorStop(0, 'rgba(200,172,112,.75)'); g.addColorStop(1, 'rgba(200,172,112,0)');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(CX, CY, BASE_R + 20, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,.35)'; ctx.lineWidth = 16; ctx.strokeRect(0, 0, WORLD, WORLD);
+  for (const d of decor){
+    if (d.x < x0 || d.x > x1 || d.y < y0 || d.y > y1) continue;
+    if (d.k === 0){
+      ctx.strokeStyle = 'rgba(40,80,30,.55)'; ctx.lineWidth = 2; ctx.beginPath();
+      ctx.moveTo(d.x - 4*d.s, d.y); ctx.lineTo(d.x - 6*d.s, d.y - 7*d.s);
+      ctx.moveTo(d.x, d.y); ctx.lineTo(d.x, d.y - 9*d.s);
+      ctx.moveTo(d.x + 4*d.s, d.y); ctx.lineTo(d.x + 6*d.s, d.y - 7*d.s); ctx.stroke();
+    } else {
+      ctx.fillStyle = d.k === 1 ? '#f4e36b' : '#f08fb0';
+      ctx.beginPath(); ctx.arc(d.x, d.y, 3 * d.s, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+}
+
+function rrect(x, y, w, h, r){ ctx.beginPath(); ctx.roundRect(x, y, w, h, r); }
+function text(t, x, y, size, color, weight){
+  ctx.font = (weight || 700) + ' ' + size + 'px system-ui,-apple-system,sans-serif';
+  ctx.fillStyle = color; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(t, x, y);
+}
+function emoji(e, x, y, size){ ctx.font = size + 'px ' + EMOJI_FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#000'; ctx.fillText(e, x, y); }
+
+function drawPad(p){
+  const x = p.x - p.w / 2, y = p.y - p.h / 2;
+  let fill = 'rgba(40,60,40,.55)', edge = 'rgba(255,255,255,.55)', can = true;
+  let icon = '', title = '', l1 = '', l2 = '', l2c = '#ffd84a';
+  if (p.kind === 'market'){ fill = 'rgba(214,170,40,.8)'; edge = '#ffe58a'; icon = '💰'; title = 'РЫНОК'; l2 = 'продать'; l2c = '#fff'; }
+  else if (p.kind === 'store'){
+    fill = 'rgba(120,80,40,.8)'; edge = '#e0b07a'; icon = '📦'; title = 'СКЛАД';
+    l2 = sumRes(S.store) + '/' + STORE_CAP; l2c = '#fff';
+  }
+  else if (p.kind === 'hall'){
+    fill = 'rgba(70,90,140,.8)'; edge = '#a9c4ff'; icon = '🏛️'; title = 'РАТУША';
+    if (S.epoch >= 2){ l1 = 'Хутор'; l2 = 'дальше — скоро'; l2c = '#cfe0ff'; }
+    else {
+      const logs = sumRes(S.store);
+      l1 = '→ Эпоха 2';
+      l2 = Math.min(logs, HALL_COST.logs) + '/' + HALL_COST.logs + '🪵  ' + fmt(HALL_COST.coins) + '💰';
+      can = logs >= HALL_COST.logs && S.coins >= HALL_COST.coins; l2c = can ? '#b6ff8a' : '#ffd0a0';
+    }
+  }
+  else {
+    const U = UPG[p.key], l = S.lv[p.key];
+    icon = U.icon; title = U.name; l1 = 'ур. ' + l + ' · ' + U.show(U.val(l));
+    if (l >= U.max){ l2 = 'МАКС'; l2c = '#9fe0ff'; }
+    else { const c = U.cost(l); can = S.coins >= c; l2 = '💰 ' + fmt(c); l2c = can ? '#ffd84a' : '#ff9a8a'; }
+  }
+  ctx.save();
+  if (!can && p.kind === 'upg') ctx.globalAlpha = 0.7;
+  // тень и основа
+  ctx.fillStyle = 'rgba(0,0,0,.22)'; rrect(x + 3, y + 5, p.w, p.h, 14); ctx.fill();
+  ctx.fillStyle = fill; rrect(x, y, p.w, p.h, 14); ctx.fill();
+  ctx.lineWidth = p.inside ? 4 : 2.5; ctx.setLineDash(p.inside ? [] : [8, 6]); ctx.strokeStyle = edge;
+  rrect(x, y, p.w, p.h, 14); ctx.stroke(); ctx.setLineDash([]);
+  // заполнение при удержании
+  if (p.inside && (p.kind === 'upg' || p.kind === 'hall') && p.hold > 0){
+    const k = clamp(p.hold / 0.6, 0, 1);
+    ctx.fillStyle = 'rgba(255,255,255,.22)'; rrect(x, y + p.h * (1 - k), p.w, p.h * k, 14); ctx.fill();
+  }
+  if (p.flash > 0){ ctx.fillStyle = `rgba(255,255,200,${p.flash})`; rrect(x, y, p.w, p.h, 14); ctx.fill(); }
+  ctx.restore();
+  const hasL1 = !!l1;
+  emoji(icon, p.x, p.y - (hasL1 ? 22 : 16), 24);
+  text(title, p.x, p.y + (hasL1 ? 1 : 8), 11, '#fff', 800);
+  if (hasL1) text(l1, p.x, p.y + 15, 9.5, 'rgba(255,255,255,.85)', 600);
+  ctx.save(); ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.5)';
+  ctx.font = '800 11.5px system-ui,sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  const ly = p.y + (hasL1 ? 30 : 24);
+  ctx.strokeText(l2, p.x, ly); ctx.fillStyle = l2c; ctx.fillText(l2, p.x, ly); ctx.restore();
+}
+
+function drawTreeShape(tr, s){
+  const T = tr.T;
+  ctx.fillStyle = T.trunk;
+  ctx.fillRect(-5 * s, -26 * s, 10 * s, 26 * s);
+  if (tr.type === 'birch'){
+    ctx.fillStyle = '#3b3b3b';
+    ctx.fillRect(-5 * s, -20 * s, 5 * s, 2 * s); ctx.fillRect(0, -12 * s, 5 * s, 2 * s); ctx.fillRect(-5 * s, -6 * s, 4 * s, 1.5 * s);
+    const c = T.crown;
+    ctx.fillStyle = c[0]; ctx.beginPath(); ctx.arc(-9*s, -36*s, 16*s, 0, 7); ctx.arc(10*s, -38*s, 15*s, 0, 7); ctx.fill();
+    ctx.fillStyle = c[1]; ctx.beginPath(); ctx.arc(0, -46*s, 18*s, 0, 7); ctx.fill();
+    ctx.fillStyle = c[2]; ctx.beginPath(); ctx.arc(-4*s, -52*s, 8*s, 0, 7); ctx.fill();
+  } else {
+    const c = T.crown;
+    const tri = (y, w, h, col) => { ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(-w, y); ctx.lineTo(w, y); ctx.lineTo(0, y - h); ctx.closePath(); ctx.fill(); };
+    tri(-18*s, 24*s, 26*s, c[0]); tri(-32*s, 20*s, 24*s, c[1]); tri(-46*s, 15*s, 22*s, c[2]);
+  }
+}
+function drawTree(tr){
+  const s = tr.T.size;
+  if (tr.state === 'stump'){
+    ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.beginPath(); ctx.ellipse(tr.x, tr.y + 2, 10*s, 4*s, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = tr.type === 'birch' ? '#d9d2c0' : '#6b4527'; ctx.fillRect(tr.x - 5*s, tr.y - 6*s, 10*s, 6*s);
+    ctx.fillStyle = '#c99a62'; ctx.beginPath(); ctx.ellipse(tr.x, tr.y - 6*s, 5*s, 2.5*s, 0, 0, 7); ctx.fill();
+    return;
+  }
+  ctx.save();
+  let ox = 0;
+  if (tr.shake > 0) ox = Math.sin(tr.shake * 90) * 3 * (tr.shake / 0.18);
+  ctx.translate(tr.x + ox, tr.y);
+  if (tr.state !== 'falling'){ ctx.fillStyle = 'rgba(0,0,0,.2)'; ctx.beginPath(); ctx.ellipse(4, 3, 22*s, 8*s, 0, 0, 7); ctx.fill(); }
+  if (tr.state === 'growing'){ const k = Math.max(0.01, easeOutBack(Math.min(1, tr.t / 0.6))); ctx.scale(k, k); }
+  else if (tr.state === 'falling'){
+    const p = Math.min(1, tr.t / 0.55);
+    ctx.rotate(tr.fallDir * p * p * Math.PI / 2);
+    ctx.globalAlpha = 1 - clamp((tr.t - 0.45) / 0.25, 0, 1);
+  }
+  drawTreeShape(tr, s);
+  ctx.restore();
+  if (tr.state === 'alive' && tr.showHp > 0 && tr.hp < tr.T.hp){
+    const w = 36, y = tr.y - 76 * s;
+    ctx.globalAlpha = Math.min(1, tr.showHp * 2);
+    ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fillRect(tr.x - w/2 - 2, y - 2, w + 4, 8);
+    ctx.fillStyle = '#e94b3c'; ctx.fillRect(tr.x - w/2, y, w * (tr.hp / tr.T.hp), 4);
+    ctx.globalAlpha = 1;
+  }
+}
+function drawLogAt(x, y, rot, kind, scale){
+  ctx.save(); ctx.translate(x, y); ctx.rotate(rot); if (scale) ctx.scale(scale, scale);
+  ctx.fillStyle = TYPES[kind].log; ctx.fillRect(-10, -4, 20, 8);
+  ctx.fillStyle = '#d7a868'; ctx.beginPath(); ctx.ellipse(10, 0, 2.5, 4, 0, 0, 7); ctx.fill();
+  ctx.restore();
+}
+function drawLog(d){
+  ctx.fillStyle = 'rgba(0,0,0,.2)'; ctx.beginPath(); ctx.ellipse(d.x, d.y + 2, 9, 3.5, 0, 0, 7); ctx.fill();
+  drawLogAt(d.x, d.y - 4 - d.z, d.rot, d.kind);
+}
+function drawPlayer(){
+  const bob = P.moving ? Math.abs(Math.sin(P.walk)) * 3 : 0;
+  ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.beginPath(); ctx.ellipse(P.x, P.y + 4, 16, 6, 0, 0, 7); ctx.fill();
+  ctx.save(); ctx.translate(P.x, P.y - bob);
+  const st = P.moving ? Math.sin(P.walk) * 4 : 0;
+  ctx.fillStyle = '#3a2f28'; ctx.fillRect(-8, -6 + st, 6, 8); ctx.fillRect(2, -6 - st, 6, 8);
+  ctx.fillStyle = '#c0392b'; rrect(-13, -30, 26, 26, 8); ctx.fill();
+  ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.fillRect(-13, -22, 26, 3); ctx.fillRect(-13, -13, 26, 3); ctx.fillRect(-4, -30, 3, 26); ctx.fillRect(5, -30, 3, 26);
+  ctx.fillStyle = '#f1c38e'; ctx.beginPath(); ctx.arc(0, -40, 11, 0, 7); ctx.fill();
+  ctx.fillStyle = '#7a4a24'; ctx.beginPath(); ctx.arc(0, -35, 9, 0.15 * Math.PI, 0.85 * Math.PI); ctx.fill();
+  ctx.fillStyle = '#2d6ea3'; ctx.beginPath(); ctx.arc(0, -44, 11, Math.PI, 0); ctx.fill(); ctx.fillRect(-12, -45, 24, 4);
+  const ex = Math.cos(P.face) * 3, ey = Math.sin(P.face) * 1.5;
+  ctx.fillStyle = '#222'; ctx.beginPath(); ctx.arc(-4 + ex, -40 + ey, 1.6, 0, 7); ctx.arc(4 + ex, -40 + ey, 1.6, 0, 7); ctx.fill();
+  // стопка брёвен над головой
+  const n = sumRes(S.bag);
+  if (n > 0){
+    const rows = Math.min(8, Math.ceil(n / BAG_CAP * 8));
+    const kind = S.bag.pine > 0 ? 'pine' : 'birch';
+    for (let i = 0; i < rows; i++) drawLogAt(0, -60 - i * 7, 0, kind, 1.1);
+  }
+  ctx.restore();
+}
+function drawAxes(){
+  ctx.lineCap = 'round';
+  for (let i = 0; i < ring.count; i++){
+    const a = ring.angle + i * Math.PI * 2 / ring.count;
+    ctx.strokeStyle = 'rgba(255,255,255,.16)'; ctx.lineWidth = 12;
+    ctx.beginPath(); ctx.arc(P.x, P.y - 14, ring.radius, a - 0.7, a); ctx.stroke();
+  }
+  for (let i = 0; i < ring.count; i++){
+    const a = ring.angle + i * Math.PI * 2 / ring.count;
+    const ax = P.x + Math.cos(a) * ring.radius, ay = P.y + Math.sin(a) * ring.radius - 14;
+    ctx.save(); ctx.translate(ax, ay); ctx.rotate(a * 3);
+    ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.beginPath(); ctx.ellipse(0, 16, 8, 3, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = '#8b5a2b'; ctx.fillRect(-2.5, -15, 5, 30);
+    ctx.fillStyle = '#b8c2cc'; ctx.beginPath();
+    ctx.moveTo(2, -15); ctx.lineTo(14, -20); ctx.quadraticCurveTo(18, -9, 14, 2); ctx.lineTo(2, -5); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#e8eef3'; ctx.fillRect(12, -17, 2.5, 16);
+    ctx.restore();
+  }
+}
+function drawBaseArrow(){
+  // стрелка к рынку, когда рюкзак полон и база далеко
+  if (sumRes(S.bag) < BAG_CAP) return;
+  const s = worldToScreen(CX, CY);
+  const m = 46;
+  if (s.x > m && s.x < W - m && s.y > m + 60 && s.y < H - m) return;
+  const a = Math.atan2(s.y - H / 2, s.x - W / 2);
+  const ex = clamp(s.x, m, W - m), ey = clamp(s.y, m + 60, H - m);
+  ctx.save(); ctx.translate(ex, ey);
+  ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.beginPath(); ctx.arc(0, 0, 22, 0, 7); ctx.fill();
+  emoji('💰', 0, 1, 18);
+  ctx.rotate(a); ctx.fillStyle = '#ffd84a'; ctx.beginPath(); ctx.moveTo(34, 0); ctx.lineTo(24, -8); ctx.lineTo(24, 8); ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+
+function render(){
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.fillStyle = '#1b3320'; ctx.fillRect(0, 0, W, H);
+  ctx.translate(W / 2, H / 2); ctx.scale(SCALE, SCALE); ctx.translate(-cam.x, -cam.y);
+  const hw = W / SCALE / 2 + 90, hh = H / SCALE / 2 + 120;
+  const x0 = cam.x - hw, x1 = cam.x + hw, y0 = cam.y - hh, y1 = cam.y + hh;
+  drawGround(x0, y0, x1, y1);
+  if (Math.abs(cam.x - CX) < hw + 250 && Math.abs(cam.y - CY) < hh + 250) for (const p of pads) drawPad(p);
+
+  const list = [];
+  for (const tr of trees) if (tr.x > x0 && tr.x < x1 && tr.y > y0 && tr.y < y1) list.push({ y: tr.y, f: 0, o: tr });
+  for (const d of drops) if (d.x > x0 && d.x < x1 && d.y > y0 && d.y < y1) list.push({ y: d.y, f: 1, o: d });
+  list.push({ y: P.y, f: 2, o: P });
+  list.sort((a, b) => a.y - b.y);
+  for (const it of list){ if (it.f === 0) drawTree(it.o); else if (it.f === 1) drawLog(it.o); else drawPlayer(); }
+
+  for (const f of flyLogs){
+    const x = lerp(f.x, f.tx, f.t), y = lerp(f.y, f.ty, f.t) - Math.sin(f.t * Math.PI) * 50;
+    drawLogAt(x, y, f.t * 8, f.kind);
+  }
+  drawAxes();
+
+  for (const c of chips){
+    ctx.save(); ctx.translate(c.x, c.y - c.z); ctx.rotate(c.rot); ctx.globalAlpha = Math.min(1, c.life * 2);
+    ctx.fillStyle = c.c; ctx.fillRect(-c.w/2, -c.w/4, c.w, c.w/2); ctx.restore();
+  }
+  ctx.globalAlpha = 1; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  for (const t of texts){
+    ctx.font = 'bold ' + t.size + 'px system-ui,sans-serif';
+    ctx.globalAlpha = Math.min(1, t.life * 2.5);
+    ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,.6)'; ctx.strokeText(t.txt, t.x, t.y);
+    ctx.fillStyle = t.c; ctx.fillText(t.txt, t.x, t.y);
+  }
+  ctx.globalAlpha = 1;
+
+  // экранный слой
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  for (const c of flyCoins){
+    if (c.t < 0) continue;
+    const k = c.t / 0.5, e = k * k;
+    const x = lerp(c.sx, coinTarget.x, e), y = lerp(c.sy, coinTarget.y, e) - Math.sin(k * Math.PI) * 40;
+    ctx.fillStyle = '#ffd84a'; ctx.strokeStyle = '#b8860b'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(x, y, 7, 0, 7); ctx.fill(); ctx.stroke();
+  }
+  drawBaseArrow();
+  if (joy.active){
+    let dx = joy.x - joy.ox, dy = joy.y - joy.oy; const l = Math.hypot(dx, dy);
+    if (l > JOY_MAX){ dx = dx / l * JOY_MAX; dy = dy / l * JOY_MAX; }
+    ctx.fillStyle = 'rgba(255,255,255,.12)'; ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(joy.ox, joy.oy, JOY_MAX, 0, 7); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.beginPath(); ctx.arc(joy.ox + dx, joy.oy + dy, 24, 0, 7); ctx.fill();
+  }
+}
+
+// ================== НАСТРОЙКИ ==================
+$('dbgBtn').addEventListener('click', () => $('dbg').classList.toggle('open'));
+
+// --- экспорт / импорт сохранения ---
+const SAVE_PREFIX = 'VIHR1:';
+function encodeSave(){ return SAVE_PREFIX + btoa(unescape(encodeURIComponent(JSON.stringify(S)))); }
+function decodeSave(str){
+  str = (str || '').trim().replace(/\s+/g, '');
+  if (!str.startsWith(SAVE_PREFIX)) throw new Error('prefix');
+  const d = JSON.parse(decodeURIComponent(escape(atob(str.slice(SAVE_PREFIX.length)))));
+  if (typeof d !== 'object' || d === null || typeof d.coins !== 'number' || !d.lv) throw new Error('shape');
+  return d;
+}
+let modalAction = null;
+function openModal(title, txt, value, okLabel, onOk, readOnly){
+  $('mTitle').textContent = title; $('mText').textContent = txt;
+  const a = $('mArea'); a.value = value; a.readOnly = !!readOnly;
+  $('mOk').textContent = okLabel; modalAction = onOk;
+  $('modal').classList.add('open'); $('dbg').classList.remove('open');
+  if (readOnly){ setTimeout(() => { a.focus(); a.select(); }, 50); }
+}
+function closeModal(){ $('modal').classList.remove('open'); modalAction = null; }
+$('mClose').addEventListener('click', closeModal);
+$('mOk').addEventListener('click', () => { if (modalAction) modalAction(); });
+$('exportBtn').addEventListener('click', () => {
+  save();
+  openModal('📤 Экспорт сохранения', 'Скопируй этот код и сохрани в Заметках. Если удалишь игру или сменишь телефон — вставишь его через «Загрузить сохранение».',
+    encodeSave(), 'Скопировать', async () => {
+      const a = $('mArea'); let ok = false;
+      try { await navigator.clipboard.writeText(a.value); ok = true; } catch(_){}
+      if (!ok){ try { a.focus(); a.select(); a.setSelectionRange(0, a.value.length); ok = document.execCommand('copy'); } catch(_){} }
+      $('mOk').textContent = ok ? 'Скопировано ✓' : 'Выдели и скопируй вручную';
+    }, true);
+});
+$('importBtn').addEventListener('click', () => {
+  openModal('📥 Загрузить сохранение', 'Вставь код, который начинается с VIHR1: — текущий прогресс заменится.', '', 'Загрузить', () => {
+    let d;
+    try { d = decodeSave($('mArea').value); } catch(_){ $('mText').textContent = '❌ Код не подходит. Проверь, что скопирован целиком.'; return; }
+    if (!confirm('Заменить текущий прогресс загруженным?')) return;
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify(d)); } catch(_){}
+    location.reload();
+  }, false);
+});
+
+// --- подсказка про установку ---
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+$('installInfo').textContent = isStandalone
+  ? '✅ Игра установлена как приложение.'
+  : (isIOS ? '📱 Установить: в Safari нажми «Поделиться» → «На экран Домой».'
+           : '📱 На айфоне: открой ссылку в Safari → «Поделиться» → «На экран Домой».');
+
+// --- офлайн-режим и защита сохранения ---
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')){
+  addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
+try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch(_){}
+$('snd').addEventListener('click', e => { soundOn = !soundOn; e.target.textContent = '🔊 Звук: ' + (soundOn ? 'вкл' : 'выкл'); unlockAudio(); });
+$('cheat').addEventListener('click', () => { S.coins += 1000; pop('coins'); });
+$('reset').addEventListener('click', () => {
+  if (!confirm('Точно стереть весь прогресс?')) return;
+  S = freshState(); applyStats(); refreshEpoch(); save(); P.x = CX; P.y = CY + 10; cam.x = P.x; cam.y = P.y; drops.length = 0;
+});
+
+// ================== ЦИКЛ ==================
+resize();
+let last = performance.now();
+function frame(now){
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  update(dt); render();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
