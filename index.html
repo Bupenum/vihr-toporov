@@ -183,7 +183,7 @@
 <script>
 "use strict";
 // Номер версии: меняй при каждом выпуске — по нему кнопка «Проверить обновление» понимает, что есть новое
-const GAME_VERSION = '1.12';
+const GAME_VERSION = '1.13';
 // ================== БАЗА ==================
 const cv = document.getElementById('c'), ctx = cv.getContext('2d');
 if (!ctx.roundRect){
@@ -490,7 +490,9 @@ function loadState(d){
 }
 let S = freshState();
 try { const raw = localStorage.getItem(SAVE_KEY); if (raw) S = loadState(JSON.parse(raw)); } catch(_){}
+let saveBlocked = false;   // во время загрузки чужого сохранения автосохранение не должно его затереть
 function save(){
+  if (saveBlocked) return;
   try {
     S.lastSeen = Date.now();
     if (typeof currentRates === 'function'){ const r = currentRates(); if (r) S.rates = r; }
@@ -2922,7 +2924,11 @@ $('importBtn').addEventListener('click', () => {
     let d;
     try { d = decodeSave($('mArea').value); } catch(_){ $('mText').textContent = '❌ Код не подходит. Проверь, что скопирован целиком.'; return; }
     if (!confirm('Заменить текущий прогресс загруженным?')) return;
-    try { localStorage.setItem(SAVE_KEY, JSON.stringify(d)); } catch(_){}
+    // сначала запрещаем автосохранение (иначе при перезапуске текущая игра затрёт загруженную), потом пишем и перезапускаемся
+    saveBlocked = true;
+    d.lastSeen = Date.now();   // чтобы не начислился «офлайн-доход» за время, пока сохранение лежало в заметках
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify(d)); }
+    catch(_){ saveBlocked = false; $('mText').textContent = '❌ Не получилось записать сохранение.'; return; }
     location.reload();
   }, false);
 });
