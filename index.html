@@ -129,6 +129,7 @@
 <div id="dbg">
   <div class="t">Настройки</div>
   <button id="snd">🔊 Звук: вкл</button>
+  <button id="mus">🎵 Музыка: вкл</button>
   <button id="exportBtn">📤 Экспорт сохранения</button>
   <button id="importBtn">📥 Загрузить сохранение</button>
   <button id="reset" class="red">Сбросить прогресс</button>
@@ -723,7 +724,80 @@ function unlockAudio(){
     } catch(_){ AC = null; }
   }
   if (AC && AC.state === 'suspended') AC.resume();
+  if (AC && musicOn && !musicTimer) startMusic();
 }
+
+// ================== МУЗЫКА ==================
+// Спокойная фоновая мелодия, генерируется кодом и играет по кругу (8 тактов).
+// Аккорды: Cmaj7 → Am7 → Fmaj7 → G6, по 2 такта; мягкий пэд, бас и неторопливый «колокольчик».
+let musicOn = (() => { try { return localStorage.getItem('vihr_music') !== 'off'; } catch(_){ return true; } })();
+let musicBus = null, musicTimer = null, nextBar = 0, barIdx = 0;
+const BPM = 64, BEAT = 60 / BPM, BAR = BEAT * 4;
+const CHORDS = [[48, 55, 59, 64], [45, 52, 55, 60], [41, 48, 52, 57], [43, 50, 52, 59]];
+const MELODY = [
+  [[0, 72], [1.5, 67], [2, 71], [3, 64]],
+  [[0.5, 67], [2, 72], [3.5, 74]],
+  [[0, 72], [1, 69], [2, 67], [3, 64]],
+  [[1, 60], [2, 64], [3, 67]],
+  [[0, 69], [1.5, 72], [2, 76], [3, 72]],
+  [[0.5, 69], [2, 65], [3, 67]],
+  [[0, 71], [1, 74], [2, 67], [3.5, 74]],
+  [[0, 72], [2, 71], [3, 67]],
+];
+const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
+function makeReverb(){
+  const len = AC.sampleRate * 3, buf = AC.createBuffer(2, len, AC.sampleRate);
+  for (let ch = 0; ch < 2; ch++){ const d = buf.getChannelData(ch); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3); }
+  const c = AC.createConvolver(); c.buffer = buf; return c;
+}
+function mVoice(midi, t, dur, type, vol, attack, detune){
+  const o = AC.createOscillator(), g = AC.createGain();
+  o.type = type; o.frequency.value = mtof(midi); if (detune) o.detune.value = detune;
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.linearRampToValueAtTime(vol, t + attack);
+  g.gain.setTargetAtTime(0.0001, t + Math.max(attack, dur - 0.6), 0.5);
+  o.connect(g).connect(musicBus); o.start(t); o.stop(t + dur + 2);
+}
+function playBar(t, i){
+  const ch = CHORDS[(i >> 1) % 4];
+  if (i % 2 === 0){
+    for (const m of ch){ mVoice(m, t, BAR * 2, 'sine', 0.035, 1.6, -4); mVoice(m + 12, t, BAR * 2, 'triangle', 0.012, 2, 5); }
+    mVoice(ch[0] - 12, t, BAR * 2, 'sine', 0.09, 0.4, 0);
+  }
+  for (const [b, m] of MELODY[i % 8]){
+    if (i >= 8 && Math.random() < 0.15) continue;      // лёгкие вариации на повторах
+    const nt = t + b * BEAT;
+    mVoice(m, nt, BEAT * 1.6, 'sine', 0.06, 0.01, 0);
+    mVoice(m + 12, nt, BEAT * 0.8, 'sine', 0.012, 0.01, 0);
+  }
+}
+function scheduleMusic(){
+  if (!AC || AC.state !== 'running') return;
+  if (nextBar < AC.currentTime) nextBar = AC.currentTime + 0.1;
+  while (nextBar < AC.currentTime + 1.5){ playBar(nextBar, barIdx); nextBar += BAR; barIdx++; }
+}
+function startMusic(){
+  if (!AC || !musicOn || musicTimer) return;
+  if (!musicBus){
+    musicBus = AC.createGain(); musicBus.gain.value = 0;
+    const lp = AC.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 2400;
+    const rev = makeReverb(), wet = AC.createGain(); wet.gain.value = 0.4;
+    musicBus.connect(lp); lp.connect(AC.destination); lp.connect(rev); rev.connect(wet); wet.connect(AC.destination);
+  }
+  musicBus.gain.cancelScheduledValues(AC.currentTime);
+  musicBus.gain.setTargetAtTime(0.55, AC.currentTime, 2);     // плавное появление
+  nextBar = AC.currentTime + 0.2;
+  musicTimer = setInterval(scheduleMusic, 250); scheduleMusic();
+}
+function stopMusic(){
+  clearInterval(musicTimer); musicTimer = null;
+  if (musicBus) musicBus.gain.setTargetAtTime(0, AC.currentTime, 0.4);
+}
+// когда игра свёрнута — тишина
+document.addEventListener('visibilitychange', () => {
+  if (!AC) return;
+  if (document.hidden) AC.suspend(); else AC.resume();
+});
 function canPlay(name, gap){
   if (!AC || !soundOn) return false; const t = AC.currentTime;
   if (sfxLast[name] && t - sfxLast[name] < gap) return false; sfxLast[name] = t; return true;
@@ -2793,6 +2867,12 @@ function updateQuest(dt){
 // ================== НАСТРОЙКИ ==================
 $('dbgBtn').addEventListener('click', () => $('dbg').classList.toggle('open'));
 $('snd').addEventListener('click', e => { soundOn = !soundOn; e.target.textContent = '🔊 Звук: ' + (soundOn ? 'вкл' : 'выкл'); unlockAudio(); });
+$('mus').textContent = '🎵 Музыка: ' + (musicOn ? 'вкл' : 'выкл');
+$('mus').addEventListener('click', e => {
+  musicOn = !musicOn; e.target.textContent = '🎵 Музыка: ' + (musicOn ? 'вкл' : 'выкл');
+  try { localStorage.setItem('vihr_music', musicOn ? 'on' : 'off'); } catch(_){}
+  unlockAudio(); if (musicOn) startMusic(); else stopMusic();
+});
 $('winClose').addEventListener('click', () => { $('winPanel').classList.remove('open'); pop('coins'); });
 $('reset').addEventListener('click', () => {
   if (!confirm('Точно стереть весь прогресс?')) return;

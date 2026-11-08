@@ -1,7 +1,7 @@
 // Сервис-воркер: игра работает без интернета.
 // Стратегия: сначала сеть (чтобы приходили обновления), если сети нет — кэш.
 // При выпуске новой версии меняй номер в CACHE.
-const CACHE = 'vihr-v10';
+const CACHE = 'vihr-v11';
 const ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
