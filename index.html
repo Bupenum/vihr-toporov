@@ -139,7 +139,7 @@
 <div id="modal" class="sheet"><div class="box">
   <h3 id="mTitle"></h3>
   <p id="mText"></p>
-  <textarea id="mArea" spellcheck="false" autocomplete="off"></textarea>
+  <textarea id="mArea" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
   <div class="btns"><button id="mOk"></button><button id="mClose" class="gray">Закрыть</button></div>
 </div></div>
 <div id="ringPanel" class="sheet"><div class="box">
@@ -183,7 +183,7 @@
 <script>
 "use strict";
 // Номер версии: меняй при каждом выпуске — по нему кнопка «Проверить обновление» понимает, что есть новое
-const GAME_VERSION = '1.11';
+const GAME_VERSION = '1.12';
 // ================== БАЗА ==================
 const cv = document.getElementById('c'), ctx = cv.getContext('2d');
 if (!ctx.roundRect){
@@ -2886,9 +2886,13 @@ $('reset').addEventListener('click', () => {
 const SAVE_PREFIX = 'VIHR1:';
 function encodeSave(){ return SAVE_PREFIX + btoa(unescape(encodeURIComponent(JSON.stringify(S)))); }
 function decodeSave(str){
-  str = (str || '').trim().replace(/\s+/g, '');
-  if (!str.startsWith(SAVE_PREFIX)) throw new Error('prefix');
-  const d = JSON.parse(decodeURIComponent(escape(atob(str.slice(SAVE_PREFIX.length)))));
+  // терпим: пробелы и переносы, маленькие буквы в «vihr1:», кавычки и текст вокруг, код без префикса
+  str = (str || '').replace(/\s+/g, '');
+  const m = str.match(/vihr1:([A-Za-z0-9+/=_-]+)/i) || str.match(/(eyJ[A-Za-z0-9+/=_-]+)/);
+  if (!m) throw new Error('prefix');
+  let b64 = m[1].replace(/-/g, '+').replace(/_/g, '/');
+  while (b64.length % 4) b64 += '=';
+  const d = JSON.parse(decodeURIComponent(escape(atob(b64))));
   if (typeof d !== 'object' || d === null || typeof d.coins !== 'number' || !d.lv) throw new Error('shape');
   return d;
 }
