@@ -277,7 +277,7 @@
 <script>
 "use strict";
 // Номер версии: меняй при каждом выпуске — по нему кнопка «Проверить обновление» понимает, что есть новое
-const GAME_VERSION = '1.15';
+const GAME_VERSION = '1.16';
 // ================== БАЗА ==================
 const cv = document.getElementById('c'), ctx = cv.getContext('2d');
 if (!ctx.roundRect){
@@ -808,21 +808,38 @@ const JOY_MAX = 55;
 let moved = false;
 cv.addEventListener('pointerdown', e => {
   unlockAudio();
-  if (joy.active) return;
+  // новое касание всегда забирает джойстик себе — даже если старое «залипло» (браузер потерял отпускание пальца)
   joy.active = true; joy.id = e.pointerId;
   joy.ox = joy.x = e.clientX; joy.oy = joy.y = e.clientY;
   try { cv.setPointerCapture(e.pointerId); } catch(_){}
 });
 cv.addEventListener('pointermove', e => { if (joy.active && e.pointerId === joy.id){ joy.x = e.clientX; joy.y = e.clientY; } });
 const endJoy = e => { if (e.pointerId === joy.id){ joy.active = false; joy.id = null; } };
-cv.addEventListener('pointerup', endJoy); cv.addEventListener('pointercancel', endJoy);
+cv.addEventListener('pointerup', endJoy); cv.addEventListener('pointercancel', endJoy); cv.addEventListener('lostpointercapture', endJoy);
+addEventListener('pointerup', endJoy, true);
+function resetInput(){
+  joy.active = false; joy.id = null;
+  for (const k in keys) keys[k] = false;
+  const a = document.activeElement; if (a && a.blur && a !== document.body) a.blur();
+  window.scrollTo(0, 0);        // после клавиатуры айфон иногда оставляет страницу сдвинутой
+}
+// окно открылось или закрылось — сбрасываем управление (следим только за окнами, не за мигающими значками)
+const panelObserver = new MutationObserver(muts => {
+  for (const m of muts){
+    const wasOpen = (m.oldValue || '').split(' ').includes('open'), isOpen = m.target.classList.contains('open');
+    if (wasOpen !== isOpen){ resetInput(); break; }
+  }
+});
+setTimeout(() => document.querySelectorAll('.sheet, #ending').forEach(p => panelObserver.observe(p, { attributes:true, attributeFilter:['class'], attributeOldValue:true })), 0);
+addEventListener('blur', () => { for (const k in keys) keys[k] = false; joy.active = false; });
 document.addEventListener('touchmove', e => { if (!e.target.closest || !e.target.closest('.sheet')) e.preventDefault(); }, { passive:false });
 document.addEventListener('gesturestart', e => e.preventDefault());
 document.addEventListener('dblclick', e => e.preventDefault());
 
 const keys = {};
-addEventListener('keydown', e => { keys[e.key.toLowerCase()] = true; unlockAudio(); });
-addEventListener('keyup',   e => { keys[e.key.toLowerCase()] = false; });
+const typing = e => e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA');
+addEventListener('keydown', e => { if (typing(e) || !e.key) return; keys[e.key.toLowerCase()] = true; unlockAudio(); });
+addEventListener('keyup',   e => { if (!e.key) return; keys[e.key.toLowerCase()] = false; });
 function inputVec(){
   let x = 0, y = 0;
   if (joy.active){
@@ -2124,6 +2141,7 @@ function findArrowTarget(){
 }
 function updateHints(){
   arrowTarget = findArrowTarget();
+  const full = sumRes(S.bag) >= BAG_CAP;
   const hungry = workers.some(w => w.hungry);
   if (!moved) return setHint('Веди пальцем по экрану, чтобы идти');
   if (full && !S.flags.sold) return setHint('Рюкзак полон! Неси всё на рынок 💰 — он на базе');
@@ -3354,11 +3372,18 @@ applyOffline();
 // ================== ЦИКЛ ==================
 resize();
 let last = performance.now(), miniT = 0;
+let frameErrShown = false;
 function frame(now){
-  const dt = Math.min(0.05, (now - last) / 1000); last = now;
-  update(dt); render(); booted = true;
-  miniT -= dt; if (miniT <= 0){ miniT = 0.15; drawMini(); }
+  // следующий кадр заказываем сразу: даже если ниже что-то сломается, игра не замрёт
   requestAnimationFrame(frame);
+  const dt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now;
+  try {
+    update(dt); render(); booted = true;
+    miniT -= dt; if (miniT <= 0){ miniT = 0.15; drawMini(); }
+  } catch(e){
+    console.error(e);
+    if (!frameErrShown){ frameErrShown = true; banner('⚠️ Что-то пошло не так', 'Игра продолжает работать. Если повторится — отправь скриншот: ' + String(e && e.message).slice(0, 80)); }
+  }
 }
 requestAnimationFrame(frame);
 </script>
