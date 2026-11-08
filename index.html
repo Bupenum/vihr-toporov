@@ -130,6 +130,7 @@
   <div class="t">Настройки</div>
   <button id="snd">🔊 Звук: вкл</button>
   <button id="mus">🎵 Музыка: вкл</button>
+  <button id="updBtn">🔄 Проверить обновление</button>
   <button id="exportBtn">📤 Экспорт сохранения</button>
   <button id="importBtn">📥 Загрузить сохранение</button>
   <button id="reset" class="red">Сбросить прогресс</button>
@@ -181,6 +182,8 @@
 
 <script>
 "use strict";
+// Номер версии: меняй при каждом выпуске — по нему кнопка «Проверить обновление» понимает, что есть новое
+const GAME_VERSION = '1.11';
 // ================== БАЗА ==================
 const cv = document.getElementById('c'), ctx = cv.getContext('2d');
 if (!ctx.roundRect){
@@ -2926,6 +2929,36 @@ $('installInfo').textContent = isStandalone
   ? '✅ Игра установлена как приложение.'
   : (isIOS ? '📱 Установить: в Safari нажми «Поделиться» → «На экран Домой».'
            : '📱 На айфоне: открой ссылку в Safari → «Поделиться» → «На экран Домой».');
+$('installInfo').textContent += '  ·  Версия ' + GAME_VERSION;
+
+// --- обновление игры ---
+async function checkUpdate(){
+  const b = $('updBtn'); b.disabled = true; b.textContent = '⏳ Проверяю...';
+  const done = (txt) => { b.textContent = txt; setTimeout(() => { b.textContent = '🔄 Проверить обновление'; b.disabled = false; }, 3000); };
+  let fresh;
+  try {
+    const r = await fetch('index.html?check=' + Date.now(), { cache: 'no-store' });
+    if (!r.ok) throw new Error('http');
+    fresh = await r.text();
+  } catch(_){ return done('📵 Нет интернета'); }
+  const m = fresh.match(/GAME_VERSION = '([^']+)'/), v = m ? m[1] : null;
+  if (!v) return done('⚠️ Не получилось проверить');
+  if (v === GAME_VERSION) return done('✅ У тебя последняя версия');
+  // есть новая версия: сохраняем прогресс, чистим старый кэш и перезапускаемся
+  b.textContent = '⬇️ Обновляю до ' + v + '...';
+  save();
+  try { const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration(); if (reg) await reg.update(); } catch(_){}
+  try { const keys = await caches.keys(); await Promise.all(keys.map(k => caches.delete(k))); } catch(_){}
+  try { localStorage.setItem('vihr_updated_from', GAME_VERSION); } catch(_){}
+  location.reload();
+}
+$('updBtn').addEventListener('click', () => { unlockAudio(); checkUpdate(); });
+// после обновления — сообщение
+try {
+  const from = localStorage.getItem('vihr_updated_from');
+  if (from && from !== GAME_VERSION){ localStorage.removeItem('vihr_updated_from'); setTimeout(() => banner('✅ Игра обновлена!', 'Версия ' + from + ' → ' + GAME_VERSION + '. Прогресс на месте.'), 800); }
+  else if (from){ localStorage.removeItem('vihr_updated_from'); setTimeout(() => banner('⏳ Обновление ещё в пути', 'Сайт GitHub обновляется до 10 минут после загрузки файлов. Попробуй ещё раз чуть позже.'), 800); }
+} catch(_){}
 
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')){
   addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));

@@ -1,7 +1,7 @@
 // Сервис-воркер: игра работает без интернета.
-// Стратегия: сначала сеть (чтобы приходили обновления), если сети нет — кэш.
-// При выпуске новой версии меняй номер в CACHE.
-const CACHE = 'vihr-v11';
+// Стратегия: сначала сеть (со сверкой с сайтом, чтобы обновления приходили сразу), если сети нет — кэш.
+// При выпуске новой версии меняй номер в CACHE (и GAME_VERSION в index.html).
+const CACHE = 'vihr-v12';
 const ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
@@ -27,8 +27,11 @@ self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   const url = new URL(e.request.url);
   if (url.origin !== self.location.origin) return;
+  // проверка обновления — только напрямую с сайта, без подмены из кэша
+  if (url.searchParams.has('check')){ e.respondWith(fetch(e.request.url, { cache: 'no-store' })); return; }
+  // no-cache: браузер обязательно сверяется с сайтом, а не берёт старую копию из своего кэша
   e.respondWith(
-    withTimeout(fetch(e.request), 3000)
+    withTimeout(fetch(e.request.url, { cache: 'no-cache', credentials: 'same-origin' }), 4000)
       .then(res => {
         if (res.ok){ const copy = res.clone(); caches.open(CACHE).then(c => c.put(e.request, copy)); }
         return res;
