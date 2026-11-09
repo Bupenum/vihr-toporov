@@ -2644,14 +2644,23 @@ function costLine(cost){
   if (cost.coins) parts.push(fmt(cost.coins) + '💰');
   return parts.join(' ');
 }
+// цена по частям: каждая часть своим цветом (зелёная — хватает, оранжевая — не хватает)
+function setCost(I, cost){
+  const parts = [];
+  for (const g in cost){ if (g === 'coins') continue;
+    const h = groupSum(S.store, g);
+    parts.push({ t: GROUP_ICON[g] + fmt(Math.min(h, cost[g])) + '/' + fmt(cost[g]), c: h >= cost[g] ? '#b6ff8a' : '#ffd0a0' }); }
+  if (cost.coins) parts.push({ t: '💰' + fmt(cost.coins), c: S.coins >= cost.coins ? '#b6ff8a' : '#ffd0a0' });
+  I.parts = parts; I.can = !missing(cost).length; I.l2 = '';
+}
 const recipeLine = s => Object.keys(s.inp).map(g => s.inp[g] + GROUP_ICON[g]).join('+') + '→1' + GROUP_ICON[ITEMS[s.out].group];
 function padInfo(p){
   const I = { fill:'rgba(40,60,40,.6)', edge:'rgba(255,255,255,.55)', can:true, icon:'', title:'', l1:'', l2:'', l2c:'#ffd84a', dim:false };
   if (p.kind === 'market'){ Object.assign(I, { fill:'rgba(214,170,40,.85)', edge:'#ffe58a', icon:'💰', title:'РЫНОК', l2:'продать всё', l2c:'#fff' }); }
   else if (p.kind === 'store'){
     Object.assign(I, { fill:'rgba(120,80,40,.85)', edge:'#e0b07a', icon:'📦', title:'СКЛАД', l2: sumRes(S.store) + '/' + STORE_CAP, l2c:'#fff' });
-    I.l1 = GROUP_ORDER.map(g => [g, groupSum(S.store, g)]).filter(a => a[1]).sort((a, b) => b[1] - a[1]).slice(0, 3)
-      .map(a => GROUP_ICON[a[0]] + fmt(a[1])).join(' ');
+    I.parts = GROUP_ORDER.map(g => [g, groupSum(S.store, g)]).filter(a => a[1]).sort((a, b) => b[1] - a[1]).slice(0, 4)
+      .map(a => ({ t: GROUP_ICON[a[0]] + fmt(a[1]), c: 'rgba(255,255,255,.9)' }));
   }
   else if (p.kind === 'shop'){
     const s = p.shop, l = shopLevel(s), st = shopState[s.id];
@@ -2659,7 +2668,7 @@ function padInfo(p){
     if (!l){
       I.l1 = recipeLine(s);
       if (S.epoch < s.epoch){ I.l2 = '🔒 Эпоха ' + s.epoch; I.l2c = '#ffd0a0'; I.dim = true; }
-      else { I.l2 = costLine(s.cost); I.can = !missing(s.cost).length; I.l2c = I.can ? '#b6ff8a' : '#ffd0a0'; I.dim = !I.can; }
+      else { setCost(I, s.cost); I.dim = !I.can; }
     } else {
       I.l1 = recipeLine(s) + ' · 👷' + st.crew + '/' + shopSlots(s);
       I.l2 = st.idle ? '💤 ' + st.why : (st.player ? '💪 работаешь!' : '⚙️ работает');
@@ -2670,12 +2679,12 @@ function padInfo(p){
     const s = p.shop;
     Object.assign(I, { fill:'rgba(60,70,80,.88)', edge:'#b8c6d4', icon:'⚙️', title:'КОНВЕЙЕР' });
     if (S.belts[s.id]){ I.l1 = s.name; I.l2 = '✅ работает сам'; I.l2c = '#b6ff8a'; }
-    else { const c = BELT_COST(s); I.l1 = 'цех без людей'; I.l2 = costLine(c); I.can = !missing(c).length; I.l2c = I.can ? '#b6ff8a' : '#ffd0a0'; I.dim = !I.can; }
+    else { const c = BELT_COST(s); I.l1 = 'цех без людей'; setCost(I, c); I.dim = !I.can; }
   }
   else if (p.kind === 'automarket'){
     Object.assign(I, { fill:'rgba(40,110,120,.88)', edge:'#9fe8f0', icon:'🤖', title:'АВТО-РЫНОК' });
     if (S.automarket){ I.l1 = 'продаёт со склада'; I.l2 = AUTOMARKET.rate + ' шт/сек'; I.l2c = '#b6ff8a'; }
-    else { I.l1 = 'сам продаёт'; I.l2 = costLine(AUTOMARKET.cost); I.can = !missing(AUTOMARKET.cost).length; I.l2c = I.can ? '#b6ff8a' : '#ffd0a0'; I.dim = !I.can; }
+    else { I.l1 = 'сам продаёт'; setCost(I, AUTOMARKET.cost); I.dim = !I.can; }
   }
   else if (p.kind === 'board'){
     refreshOrders();
@@ -2686,7 +2695,7 @@ function padInfo(p){
   else if (p.kind === 'depot'){
     const D = S.depots[p.zone];
     Object.assign(I, { fill:'rgba(120,80,40,.85)', edge:'#e0b07a', icon:'📦', title:'ПУНКТ' });
-    if (!D){ I.l1 = 'жители сдают сюда'; I.l2 = costLine(DEPOTS[p.zone].cost); I.can = !missing(DEPOTS[p.zone].cost).length; I.l2c = I.can ? '#b6ff8a' : '#ffd0a0'; I.dim = !I.can; }
+    if (!D){ I.l1 = 'жители сдают сюда'; setCost(I, DEPOTS[p.zone].cost); I.dim = !I.can; }
     else { I.l1 = '🛒 везёт ' + sumRes(D.cart) + '/' + CART_CAP; I.l2 = sumRes(D.items) + '/' + DEPOT_CAP; I.l2c = '#fff'; }
   }
   else if (p.kind === 'shopup'){
@@ -2699,14 +2708,14 @@ function padInfo(p){
     Object.assign(I, { fill:'rgba(70,90,140,.85)', edge:'#a9c4ff', icon:'🏛️', title:'РАТУША' });
     const cost = HALL[S.epoch];
     if (!cost){ I.l1 = EPOCH_NAMES[S.epoch]; I.l2 = '🏆 высшая эпоха'; I.l2c = '#ffd84a'; }
-    else { I.l1 = '→ Эпоха ' + (S.epoch + 1); I.l2 = costLine(cost); I.can = !missing(cost).length; I.l2c = I.can ? '#b6ff8a' : '#ffd0a0'; }
+    else { I.l1 = '→ Эпоха ' + (S.epoch + 1); setCost(I, cost); }
   }
   else if (p.kind === 'gate'){
     const Z = ZONES[p.zone];
     Object.assign(I, { fill:'rgba(110,70,40,.85)', edge:'#f0c080', icon:'🚧', title: Z.name.toUpperCase() });
     if (Z.soon){ I.l2 = 'скоро'; I.l2c = '#cfe0ff'; I.dim = true; }
     else if (S.epoch < Z.epoch){ I.l1 = 'открыть'; I.l2 = '🔒 Эпоха ' + Z.epoch; I.l2c = '#ffd0a0'; I.dim = true; }
-    else { I.l1 = 'открыть'; I.l2 = costLine(Z.cost); I.can = !missing(Z.cost).length; I.l2c = I.can ? '#b6ff8a' : '#ffd0a0'; }
+    else { I.l1 = 'открыть'; setCost(I, Z.cost); }
   }
   else if (p.kind === 'hire'){
     Object.assign(I, { fill:'rgba(60,110,90,.85)', edge:'#9ff0c8', icon:'👷', title:'НАНЯТЬ', l1: 'жители ' + S.workers.length + '/' + bedCount() });
@@ -2717,7 +2726,7 @@ function padInfo(p){
   else if (p.kind === 'plot'){
     Object.assign(I, { fill:'rgba(150,120,70,.55)', edge:'#f3d9a4', icon:'🏠', title:'ДОМ', l1:'+2 жителя' });
     if (S.epoch < 2){ I.l2 = '🔒 Эпоха 2'; I.l2c = '#ffd0a0'; I.dim = true; }
-    else { const c = houseCost(houseCount()); I.l2 = costLine(c); I.can = !missing(c).length; I.l2c = I.can ? '#b6ff8a' : '#ffd0a0'; I.dim = !I.can; }
+    else { const c = houseCost(houseCount()); setCost(I, c); I.dim = !I.can; }
   }
   else {
     const U = UPG[p.key], l = S.lv[p.key];
@@ -2744,6 +2753,7 @@ function drawPadBody(p, I, x, y){
     const w = ctx.measureText(t).width;
     return w > maxW ? Math.max(6.5, size * maxW / w) : size;
   };
+  if (I.parts && I.parts.length){ drawPadParts(p, I, maxW, fit); return; }
   emoji(I.icon, p.x, p.y - (hasL1 ? 22 : 16), 24);
   text(I.title, p.x, p.y + (hasL1 ? 1 : 8), fit(I.title, I.title.length > 11 ? 9 : 11, 800), '#fff', 800);
   if (hasL1) text(I.l1, p.x, p.y + 15, fit(I.l1, 9.5, 600), 'rgba(255,255,255,.88)', 600);
@@ -2751,6 +2761,43 @@ function drawPadBody(p, I, x, y){
   ctx.font = '800 ' + fit(I.l2, I.l2.length > 14 ? 9.5 : 11.5, 800) + 'px system-ui,-apple-system,sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   const ly = p.y + (hasL1 ? 30 : 24);
   ctx.strokeText(I.l2, p.x, ly); ctx.fillStyle = I.l2c; ctx.fillText(I.l2, p.x, ly);
+}
+// клетка со списком (цена по частям, содержимое склада): части переносятся по строкам, всё помещается внутри
+function drawPadParts(p, I, maxW, fit){
+  const GAP = 7;
+  const wrap = F => {
+    ctx.font = '800 ' + F + 'px system-ui,-apple-system,sans-serif';
+    const rows = []; let row = [], rw = 0;
+    for (const q of I.parts){
+      const w = ctx.measureText(q.t).width;
+      if (row.length && rw + GAP + w > maxW){ rows.push(row); row = []; rw = 0; }
+      row.push({ q, w }); rw += (rw ? GAP : 0) + w;
+    }
+    if (row.length) rows.push(row);
+    return rows;
+  };
+  let F = 10.5, rows = wrap(F);
+  if (rows.length > 3){ F = 9; rows = wrap(F); }
+  const n = 1 + (I.l1 ? 1 : 0) + rows.length + (I.l2 ? 1 : 0);
+  let LH = F + 2.5, ICON = 18;
+  const room = p.h - 10, need = ICON + 3 + n * LH;
+  const k = need > room ? room / need : 1;
+  LH *= k; ICON *= k;
+  let y = p.y - (ICON + 3 + n * LH) / 2;
+  emoji(I.icon, p.x, y + ICON / 2, ICON); y += ICON + 3 + LH / 2;
+  text(I.title, p.x, y, fit(I.title, Math.min(I.title.length > 11 ? 9 : 10.5, 10.5 * k), 800), '#fff', 800); y += LH;
+  if (I.l1){ text(I.l1, p.x, y, fit(I.l1, 9 * k, 600), 'rgba(255,255,255,.88)', 600); y += LH; }
+  ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.5)'; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+  for (const row of rows){
+    const tot = row.reduce((s, r) => s + r.w, 0) + GAP * (row.length - 1);
+    const sh = tot > maxW ? maxW / tot : 1;   // одна очень длинная часть — сжимаем
+    ctx.font = '800 ' + (F * Math.min(k, sh)) + 'px system-ui,-apple-system,sans-serif';
+    let x = p.x - Math.min(tot, maxW) / 2;
+    for (const r of row){ ctx.strokeText(r.q.t, x, y); ctx.fillStyle = r.q.c; ctx.fillText(r.q.t, x, y); x += (r.w + GAP) * sh; }
+    y += LH;
+  }
+  ctx.textAlign = 'center';
+  if (I.l2){ ctx.font = '800 ' + fit(I.l2, 10.5 * k, 800) + 'px system-ui,-apple-system,sans-serif'; ctx.strokeText(I.l2, p.x, y); ctx.fillStyle = I.l2c; ctx.fillText(I.l2, p.x, y); }
 }
 function drawPad(p){
   if (!p.vis) return;
@@ -2761,7 +2808,7 @@ function drawPad(p){
   // Клетка с текстом и эмодзи рисуется в картинку один раз и перерисовывается, только когда меняется надпись.
   // Текст и эмодзи на айфоне — самое дорогое в отрисовке, раньше это делалось каждый кадр.
   const sc = SCALE * DPR, bw = p.w + 9, bh = p.h + 11;
-  const sig = I.icon + '|' + I.title + '|' + I.l1 + '|' + I.l2 + '|' + I.l2c + '|' + I.fill + '|' + I.edge + '|' + (p.inside ? 1 : 0);
+  const sig = I.icon + '|' + I.title + '|' + I.l1 + '|' + I.l2 + '|' + I.l2c + '|' + I.fill + '|' + I.edge + '|' + (p.inside ? 1 : 0) + (I.parts ? I.parts.map(q => q.t + q.c).join('|') : '');
   if (sig !== p.bmpSig || (sc !== p.bmpSc && !(zoomSettle > 0 && p.bmp))){
     p.bmpSig = sig; p.bmpSc = sc;
     const c = p.bmp || (p.bmp = document.createElement('canvas'));
