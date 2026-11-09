@@ -35,6 +35,21 @@
     border:3px solid rgba(255,255,255,.7);background:rgba(0,0,0,.5);color:#fff;font-size:26px;display:none;align-items:center;justify-content:center;
     box-shadow:0 3px 10px rgba(0,0,0,.4);padding:0}
   #pop{top:calc(env(safe-area-inset-top) + 94px);left:12px;font-size:14px;display:none}
+  #storePill{top:calc(env(safe-area-inset-top) + 94px);left:12px;font-size:14px;display:none;cursor:pointer;border:0;color:#fff}
+  #storePill.full{background:rgba(200,120,30,.8)}
+  .sbar{display:inline-block;width:42px;height:6px;background:rgba(255,255,255,.22);border-radius:3px;overflow:hidden;margin-left:2px}
+  .sbar b{display:block;height:100%;width:0;background:#b6ff8a;transition:width .3s}
+  #stCap{font-size:14px;margin-bottom:8px}
+  #stCap .big{height:10px;background:rgba(255,255,255,.15);border-radius:5px;overflow:hidden;margin-top:6px}
+  #stCap .big b{display:block;height:100%;background:#b6ff8a}
+  .strow{display:flex;align-items:center;gap:8px;padding:8px;background:rgba(255,255,255,.05);border-radius:10px;margin-bottom:5px}
+  .strow .ic{font-size:24px;width:30px;text-align:center}
+  .strow .nm{font-weight:800;font-size:14px}
+  .strow .sub{font-size:12px;opacity:.75}
+  .strow .cnt{margin-left:auto;font-weight:800;font-size:16px;text-align:right}
+  .strow .sb{display:flex;gap:4px;margin-left:6px}
+  .strow .sb button{border:0;border-radius:8px;padding:8px 9px;font-size:13px;font-weight:800;color:#fff;background:#b8860b}
+  .stsec{font-size:12px;opacity:.6;margin:10px 0 5px}
   #pop.bad{background:rgba(200,40,30,.75)}
   #hint{right:16px}
   #people{max-height:55vh;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;margin-bottom:10px}
@@ -130,13 +145,36 @@
   .ord button:disabled{opacity:.4}
   .note{font-size:12px;opacity:.7;margin:8px 0 0}
   @keyframes glow{from{box-shadow:0 0 0 0 rgba(255,216,74,.9)}to{box-shadow:0 0 0 10px rgba(255,216,74,0)}}
-  #dbg{position:fixed;top:calc(env(safe-area-inset-top) + 56px);right:12px;background:rgba(0,0,0,.8);border-radius:14px;
-    padding:10px 12px;display:none;font-size:14px;min-width:190px;z-index:5}
-  #dbg.open{display:block}
-  #dbg .t{opacity:.6;font-size:12px;margin-bottom:6px}
-  #dbg button{display:block;width:100%;margin:6px 0;background:#3d7f45;border:0;color:#fff;font-size:15px;font-weight:700;padding:8px;border-radius:8px}
-  #dbg button.red{background:#9b2c2c}
-  #dbg .info{font-size:12px;line-height:1.4;opacity:.85;margin-top:8px;max-width:210px}
+  /* ограничение времени */
+  #lockScreen{position:fixed;inset:0;z-index:40;display:none;align-items:center;justify-content:center;padding:20px;
+    background:linear-gradient(#0a1530,#1b2f5a 60%,#24452a)}
+  #lockScreen.open{display:flex}
+  .lkbox{text-align:center;max-width:380px;width:100%}
+  .lkbox h2{margin:6px 0 10px;font-size:26px}
+  .lkbox p{font-size:15px;line-height:1.45;opacity:.9;margin:0 0 18px}
+  .lkbox input,#limitBody input{width:100%;box-sizing:border-box;border:0;border-radius:12px;padding:12px;font-size:17px;background:#0f1c13;color:#fff;
+    -webkit-user-select:text;user-select:text;touch-action:auto;margin-bottom:10px}
+  .lkbtns{display:flex;gap:8px}
+  .lkbtns button,.limbtns button{flex:1;border:0;border-radius:12px;padding:12px 6px;font-size:15px;font-weight:800;color:#fff;background:#3d7f45}
+  #lockErr,.limErr{color:#ffb4a0;font-size:13px;min-height:18px;margin-top:8px}
+  .limbtns{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 12px}
+  .limbtns button{flex:1 1 28%;background:#35553c}
+  .limbtns button.cur{background:#3d7f45;outline:2px solid #ffd84a}
+  #limitBody .lt{font-size:13px;opacity:.7;margin:10px 0 2px}
+  #limitBody .big{font-size:16px;font-weight:800;margin:4px 0 8px}
+  /* окно настроек */
+  #dbg .box{max-width:440px;max-height:88vh;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+  .sethead{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .sethead h3{margin:0;font-size:20px}
+  .xbtn{border:0;background:rgba(255,255,255,.12);color:#fff;width:40px;height:40px;border-radius:50%;font-size:18px;padding:0}
+  .sgroup{font-size:12px;opacity:.6;margin:14px 0 6px;letter-spacing:.04em}
+  .sgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .sgrid button,.sbig{border:0;border-radius:12px;padding:13px 8px;font-size:15px;font-weight:700;color:#fff;background:#35553c;line-height:1.2}
+  .sgrid button:active,.sbig:active{transform:scale(.97)}
+  .sbig{display:block;width:100%}
+  .sbig.pink{background:linear-gradient(135deg,#d6456b,#a8396a);font-size:16px;padding:15px}
+  .sbig.red{background:#6e2a2a;margin-top:16px;font-size:14px}
+  #dbg .info{font-size:12px;line-height:1.5;opacity:.75;margin-top:12px;text-align:center}
   #hint{position:fixed;left:16px;right:90px;bottom:calc(env(safe-area-inset-bottom) + 100px);text-align:center;font-size:16px;
     font-weight:600;text-shadow:0 2px 6px rgba(0,0,0,.8);transition:opacity .6s;pointer-events:none;margin:0 auto}
   #banner{position:fixed;left:50%;top:30%;transform:translate(-50%,-50%) scale(.8);background:rgba(0,0,0,.78);padding:16px 22px;
@@ -166,6 +204,13 @@
 <canvas id="c"></canvas>
 <div id="coins" class="pill">💰 <span id="coinN">0</span></div>
 <div id="bag" class="pill">🎒 <span id="bagN">0/10</span></div>
+<div id="storePill" class="pill">📦 <span id="storeN">0/500</span><i class="sbar"><b id="storeBar"></b></i></div>
+<div id="storePanel" class="sheet"><div class="box">
+  <div class="sethead"><h3>📦 Склад</h3><button id="storeClose" class="xbtn" aria-label="Закрыть">✕</button></div>
+  <div id="stCap"></div>
+  <div id="stList" class="lookScroll"></div>
+  <div id="stNote" class="note"></div>
+</div></div>
 <div id="epoch" class="pill">Эпоха 1 · Лагерь</div>
 <button id="dbgBtn" class="pill">⚙️</button>
 <canvas id="mini" width="168" height="168"></canvas>
@@ -187,22 +232,47 @@
   <h3>👥 Жители</h3>
   <div id="peopleSum"></div>
   <div id="people"></div>
-  <div class="sellrow">📦 Носильщики продают со склада: <span id="sellBtns"></span></div>
+  <div class="sellrow">📦 Носильщики (и 🤖 авто-рынок) продают со склада: <span id="sellBtns"></span></div>
+  <div class="note">Носильщик берёт 25% за работу. Самому продавать выгоднее: 📦 склад → «Продать», когда ты на базе.</div>
   <div id="foodInfo"></div>
   <div class="btns"><button id="peopleClose">Готово</button></div>
 </div></div>
-<div id="dbg">
-  <div class="t">Настройки</div>
-  <button id="lookBtn" style="background:#b8406b">🎁 Сюрпризы и образы</button>
-  <button id="snd">🔊 Звук: вкл</button>
-  <button id="mus">🎵 Музыка: вкл</button>
-  <button id="updBtn">🔄 Проверить обновление</button>
-  <button id="replayEnd">🏆 Посмотреть финал</button>
-  <button id="exportBtn">📤 Экспорт сохранения</button>
-  <button id="importBtn">📥 Загрузить сохранение</button>
-  <button id="reset" class="red">Сбросить прогресс</button>
+<div id="dbg" class="sheet"><div class="box">
+  <div class="sethead"><h3>⚙️ Настройки</h3><button id="dbgClose" class="xbtn" aria-label="Закрыть">✕</button></div>
+  <button id="lookBtn" class="sbig pink">🎁 Сюрпризы и образы</button>
+  <div class="sgroup">ЗВУК И ЭКРАН</div>
+  <div class="sgrid">
+    <button id="snd">🔊 Звук: вкл</button>
+    <button id="mus">🎵 Музыка: вкл</button>
+    <button id="zoomOut">➖ Отдалить</button>
+    <button id="zoomIn">➕ Приблизить</button>
+  </div>
+  <div class="sgroup">ИГРА</div>
+  <div class="sgrid">
+    <button id="limitBtn">⏰ Время игры</button>
+    <button id="updBtn">🔄 Обновление</button>
+    <button id="replayEnd">🏆 Финал</button>
+  </div>
+  <div class="sgroup">СОХРАНЕНИЕ</div>
+  <div class="sgrid">
+    <button id="exportBtn">📤 Экспорт</button>
+    <button id="importBtn">📥 Загрузить</button>
+  </div>
+  <button id="reset" class="sbig red">🗑 Сбросить прогресс</button>
   <div class="info" id="installInfo"></div>
-</div>
+</div></div>
+<div id="limitPanel" class="sheet"><div class="box">
+  <div class="sethead"><h3>⏰ Время игры</h3><button id="limitClose" class="xbtn" aria-label="Закрыть">✕</button></div>
+  <div id="limitBody"></div>
+</div></div>
+<div id="lockScreen"><div class="lkbox">
+  <div style="font-size:64px">🌙</div>
+  <h2>На сегодня всё!</h2>
+  <p id="lockText"></p>
+  <input id="lockPw" type="password" placeholder="пароль" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false">
+  <div class="lkbtns"><button data-add="15">+15 мин</button><button data-add="30">+30 мин</button><button data-add="60">+1 час</button></div>
+  <div id="lockErr"></div>
+</div></div>
 <div id="modal" class="sheet"><div class="box">
   <h3 id="mTitle"></h3>
   <p id="mText"></p>
@@ -274,7 +344,7 @@
 <script>
 "use strict";
 // Номер версии: меняй при каждом выпуске — по нему кнопка «Проверить обновление» понимает, что есть новое
-const GAME_VERSION = '1.17';
+const GAME_VERSION = '1.18';
 // ================== БАЗА ==================
 const cv = document.getElementById('c');
 let ctx = cv.getContext('2d');    // let: при подготовке кусков земли временно рисуем в другой холст
@@ -286,13 +356,24 @@ if (!ctx.roundRect){
 }
 let W, H, DPR, SCALE;
 let coinTarget = { x: 40, y: 28 };
+// на телефонах чёткость 1.5 — на глаз почти не отличить, а рисовать почти вдвое меньше точек.
+// Если телефон всё равно не успевает, autoQuality() опускает её ещё ниже.
+const IS_TOUCH = navigator.maxTouchPoints > 0 || 'ontouchstart' in window;
+let dprCap = IS_TOUCH ? 1.5 : 2;
+// масштаб (приблизить/отдалить), запоминается на устройстве
+let ZOOM = (() => { try { const z = +localStorage.getItem('vihr_zoom'); return z ? Math.min(1.6, Math.max(0.7, z)) : 1; } catch(_){ return 1; } })();
+let zoomSettle = 0;
+function setZoom(z){
+  ZOOM = Math.min(1.6, Math.max(0.7, z));
+  try { localStorage.setItem('vihr_zoom', ZOOM); } catch(_){}
+  SCALE = Math.min(W, H) / 420 * ZOOM;
+  zoomSettle = 0.4;           // пока пальцы двигаются — землю не перерисовываем, а растягиваем готовую
+}
 function resize(){
-  // на телефонах 1.5 — на глаз почти не отличить, а рисовать почти вдвое меньше точек
-  const touch = navigator.maxTouchPoints > 0 || 'ontouchstart' in window;
-  DPR = Math.min(window.devicePixelRatio || 1, touch ? 1.5 : 2);
+  DPR = Math.min(window.devicePixelRatio || 1, dprCap);
   W = innerWidth; H = innerHeight;
   cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
-  SCALE = Math.min(W, H) / 420;
+  SCALE = Math.min(W, H) / 420 * ZOOM;
   const r = document.getElementById('coins').getBoundingClientRect();
   coinTarget = { x: r.left + 22, y: r.top + r.height / 2 };
 }
@@ -542,7 +623,7 @@ const SKINS = {
     { id:'girl',     name:'Девочка',   icon:'👧', task:'Поцелуй меня 10 раз 💋',                       hash:'5d2b2a1e' },
     { id:'princess', name:'Принцесса', icon:'👸', task:'Обними меня крепко-крепко целую минуту 🤗',    hash:'e97cfe12' },
     { id:'cat',      name:'Котик',     icon:'🐱', task:'Скажи мне 5 комплиментов подряд 🥰',          hash:'53bb38e7' },
-    { id:'fairy',    name:'Фея',       icon:'🧚', task:'Пришли мне 1 фотку нюдс 😏📸',                hash:'ca0e86f' },
+    { id:'fairy',    name:'Фея',       icon:'🧚', task:'Пришли мне 1 фотку нюдс 😏📸',                hash:'747b0cf8' },
   ],
   axe: [
     { id:'default',  name:'Обычные',   icon:'🪓' },
@@ -569,7 +650,7 @@ function freshState(){
   return { coins: 0, bag: emptyItems(), store: emptyItems(), epoch: 1, lv, slots: ['axe', 'axe'],
            zones: {}, houses: [], workers: [], sell: defaultSell(), shops: {}, seen: {},
            depots: {}, orders: [], tokens: 0, perks: {}, belts: {}, automarket: false,
-           stats: { felled:0, earned:0, orders:0, made:{}, tokensEarned:0, playTime:0 }, flags: {},
+           stats: { felled:0, earned:0, orders:0, made:{}, tokensEarned:0, playTime:0 }, flags: { fairyPw2: true },
            look: { hero:'default', axe:'default', open:{} },
            quest: 0, rates: null, lastSeen: 0, boss: { hp: NODES.great.hp, phase: 0, roots: [] }, won: false };
 }
@@ -605,6 +686,8 @@ function loadState(d){
   s.boss = Object.assign({ hp: NODES.great.hp, phase: 0, roots: [] }, d.boss);
   s.won = !!d.won; s.stats.playTime = +s.stats.playTime || 0;
   s.look = Object.assign({ hero:'default', axe:'default' }, d.look); s.look.open = Object.assign({}, d.look && d.look.open);
+  // пароль феи сменили (старый подсмотрели) — один раз закрываем фею снова, если её открыли по старому паролю
+  if (!s.flags.fairyPw2){ s.flags.fairyPw2 = true; if (s.look.open.fairy){ delete s.look.open.fairy; if (s.look.hero === 'fairy') s.look.hero = 'cat'; } }
   for (const k in s.bag) if (!ITEMS[k]) delete s.bag[k];
   for (const k in s.store) if (!ITEMS[k]) delete s.store[k];
   return s;
@@ -807,19 +890,31 @@ const cam = { x: P.x, y: P.y };
 const joy = { active:false, id:null, ox:0, oy:0, x:0, y:0 };
 const JOY_MAX = 55;
 let moved = false;
+// пальцы на экране: один — джойстик, два — щипок (масштаб)
+const ptrs = new Map(); let pinch = null;
+const pinchDist = () => { const [a, b] = [...ptrs.values()]; return Math.hypot(a.x - b.x, a.y - b.y) || 1; };
 cv.addEventListener('pointerdown', e => {
   unlockAudio();
+  ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  try { cv.setPointerCapture(e.pointerId); } catch(_){}
+  if (ptrs.size >= 2){ pinch = { d0: pinchDist(), z0: ZOOM }; joy.active = false; joy.id = null; return; }
   // новое касание всегда забирает джойстик себе — даже если старое «залипло» (браузер потерял отпускание пальца)
   joy.active = true; joy.id = e.pointerId;
   joy.ox = joy.x = e.clientX; joy.oy = joy.y = e.clientY;
-  try { cv.setPointerCapture(e.pointerId); } catch(_){}
 });
-cv.addEventListener('pointermove', e => { if (joy.active && e.pointerId === joy.id){ joy.x = e.clientX; joy.y = e.clientY; } });
-const endJoy = e => { if (e.pointerId === joy.id){ joy.active = false; joy.id = null; } };
+cv.addEventListener('pointermove', e => {
+  const p = ptrs.get(e.pointerId); if (p){ p.x = e.clientX; p.y = e.clientY; }
+  if (pinch && ptrs.size >= 2){ setZoom(pinch.z0 * pinchDist() / pinch.d0); return; }
+  if (joy.active && e.pointerId === joy.id){ joy.x = e.clientX; joy.y = e.clientY; }
+});
+const endJoy = e => {
+  ptrs.delete(e.pointerId); if (ptrs.size < 2) pinch = null;
+  if (e.pointerId === joy.id){ joy.active = false; joy.id = null; }
+};
 cv.addEventListener('pointerup', endJoy); cv.addEventListener('pointercancel', endJoy); cv.addEventListener('lostpointercapture', endJoy);
 addEventListener('pointerup', endJoy, true);
 function resetInput(){
-  joy.active = false; joy.id = null;
+  joy.active = false; joy.id = null; ptrs.clear(); pinch = null;
   for (const k in keys) keys[k] = false;
   const a = document.activeElement; if (a && a.blur && a !== document.body) a.blur();
   window.scrollTo(0, 0);        // после клавиатуры айфон иногда оставляет страницу сдвинутой
@@ -991,15 +1086,86 @@ function refreshHud(){
   const nh = workers.filter(w => w.hungry).length;
   const eat = S.workers.length * HUNGER_PER_MIN;
   const pt = show ? S.workers.length + '/' + bedCount() + ' · 🍽 ' + (eat ? Math.floor(foodTotal() / eat) + ' мин' : foodTotal()) + (nh ? ' · 😫' + nh : '') : '';
+  // склад: строчка под рюкзаком (появляется вместе с клеткой склада)
+  const showStore = !!S.seen['store:'], st = sumRes(S.store);
+  const sTxt = showStore ? fmt(st) + '/' + fmt(STORE_CAP) : '';
+  if (sTxt !== shownStore){
+    shownStore = sTxt; $('storeN').textContent = sTxt;
+    $('storeBar').style.width = Math.min(100, st / STORE_CAP * 100) + '%';
+    $('storePill').classList.toggle('full', st >= STORE_CAP * 0.95);
+  }
   if (pt !== shownPop){
-    shownPop = pt; $('popN').textContent = pt; $('pop').style.display = show ? 'flex' : 'none';
-    $('quest').style.top = 'calc(env(safe-area-inset-top) + ' + (show ? 134 : 94) + 'px)';
+    shownPop = pt; $('popN').textContent = pt;
     $('pop').classList.toggle('bad', nh > 0); $('peopleBtn').style.display = show ? 'flex' : 'none';
+  }
+  // раскладка левой колонки: рюкзак → склад → жители → задание
+  const lay = (showStore ? 1 : 0) + '' + (show ? 1 : 0);
+  if (lay !== shownLay){
+    shownLay = lay; let y = 94;
+    const put = (id, vis) => { const e = $(id); e.style.display = vis ? (id === 'quest' ? '' : 'flex') : 'none'; if (vis){ e.style.top = 'calc(env(safe-area-inset-top) + ' + y + 'px)'; y += 40; } };
+    put('storePill', showStore); put('pop', show);
+    $('quest').style.top = 'calc(env(safe-area-inset-top) + ' + y + 'px)';
   }
   if (shownCoins !== Math.floor(S.coins)){ shownCoins = Math.floor(S.coins); $('coinN').textContent = fmt(S.coins); }
   const b = sumRes(S.bag) + '/' + BAG_CAP;
   if (b !== shownBag){ shownBag = b; $('bagN').textContent = b; $('bag').classList.toggle('full', sumRes(S.bag) >= BAG_CAP); }
+  if ($('storePanel').classList.contains('open') && time - storeShownT > 1) renderStore();
+  // остаток времени игры — рядом с эпохой, когда меньше 15 минут
+  const left = typeof LIM !== 'undefined' && LIM.mins ? limitLeft() : Infinity;
+  const suf = left < 15 * 60 ? ' · ⏳' + Math.max(0, Math.ceil(left / 60)) + ' мин' : '';
+  if (suf !== epochSuffix){ epochSuffix = suf; refreshEpoch(); }
 }
+let shownStore = '', shownLay = '', storeShownT = 0;
+
+// --- окно склада: что лежит, почём, продажа на базе ---
+const nearBase = () => Math.hypot(P.x - CX, P.y - CY) < BASE_R + 80;
+const unitPrice = k => ITEMS[k].price * (perk('market') ? 1.2 : 1);
+function sellFromStore(k, n){
+  if (!nearBase()) return;
+  n = Math.min(n, S.store[k]); if (n <= 0) return;
+  const v = unitPrice(k) * n;
+  S.store[k] -= n; S.coins += v; S.stats.earned += v; S.flags.sold = true;
+  sfxCoin(); pop('coins'); spawnText(P.x, P.y - 80, '+' + fmt(v) + ' 💰', '#ffd84a', 16);
+  renderStore(); save();
+}
+let storeSig = '';
+function renderStore(force){
+  storeShownT = time;
+  const st = sumRes(S.store), near = nearBase();
+  // перерисовываем, только если что-то поменялось (чтобы кнопки не «прыгали» под пальцем)
+  const sig = near + JSON.stringify(S.store) + sumRes(S.bag) + STORE_CAP;
+  if (!force && sig === storeSig) return; storeSig = sig;
+  $('stCap').innerHTML = 'Занято <b>' + fmt(st) + '</b> из ' + fmt(STORE_CAP) + ' · всё вместе стоит <b>' + fmt(Math.floor(valueOf(S.store) * (perk('market') ? 1.2 : 1))) + ' 💰</b>' +
+    '<div class="big"><b style="width:' + Math.min(100, st / STORE_CAP * 100) + '%"></b></div>';
+  const list = $('stList'); list.innerHTML = '';
+  const keysSorted = Object.keys(ITEMS).filter(k => S.store[k] > 0 || (S.stats.made[k] || 0) > 0)
+    .sort((a, b) => (GROUP_ORDER.indexOf(ITEMS[a].group) - GROUP_ORDER.indexOf(ITEMS[b].group)) || (ITEMS[a].price - ITEMS[b].price));
+  if (!keysSorted.length) list.innerHTML = '<p>Пока пусто. Неси добычу на 📦 склад — встань на его клетку на базе.</p>';
+  for (const k of keysSorted){
+    const it = ITEMS[k], n = S.store[k], row = el('div', 'strow');
+    const info = el('div');
+    info.append(el('div', 'nm', it.name), el('div', 'sub', '1 шт = ' + (Math.round(unitPrice(k) * 10) / 10) + ' 💰' + (FOOD[k] ? ' · 🍽 ' + FOOD[k] + ' сытости' : '')));
+    row.append(el('span', 'ic', GROUP_ICON[it.group]), info);
+    const cnt = el('div', 'cnt'); cnt.innerHTML = fmt(n) + '<div class="sub">≈ ' + fmt(Math.floor(unitPrice(k) * n)) + ' 💰</div>'; row.append(cnt);
+    if (near && n > 0){
+      const sb = el('div', 'sb');
+      const b1 = el('button', '', '−10'); b1.title = 'Продать 10'; b1.addEventListener('click', () => sellFromStore(k, 10));
+      const b2 = el('button', '', 'Всё'); b2.addEventListener('click', () => sellFromStore(k, S.store[k]));
+      sb.append(b1, b2); row.append(sb);
+    }
+    list.append(row);
+  }
+  const bagN = sumRes(S.bag);
+  if (bagN){
+    list.append(el('div', 'stsec', '🎒 В РЮКЗАКЕ (продать — на 💰 рынке)'));
+    list.append(el('div', 'sub', Object.keys(S.bag).filter(k => S.bag[k] > 0).map(k => GROUP_ICON[ITEMS[k].group] + ' ' + S.bag[k]).join('   ')));
+  }
+  $('stNote').textContent = near
+    ? '«−10» и «Всё» продают со склада по полной цене. Еду 🫐🐟🍖🍞 оставляй жителям!'
+    : 'Продавать со склада можно, когда ты на базе. Носильщики продают сами, но берут 25% за работу.';
+}
+$('storePill').addEventListener('click', () => { unlockAudio(); renderStore(true); $('storePanel').classList.add('open'); });
+$('storeClose').addEventListener('click', () => $('storePanel').classList.remove('open'));
 let hintText = null;
 function setHint(text){
   if (text === hintText) return; hintText = text;
@@ -1010,7 +1176,8 @@ function banner(title, sub){
   const b = $('banner'); b.innerHTML = title + (sub ? '<small>' + sub + '</small>' : '');
   b.classList.add('show'); clearTimeout(bannerTimer); bannerTimer = setTimeout(() => b.classList.remove('show'), 4200);
 }
-function refreshEpoch(){ $('epoch').textContent = 'Эпоха ' + S.epoch + ' · ' + EPOCH_NAMES[S.epoch]; }
+let epochSuffix = '';
+function refreshEpoch(){ $('epoch').textContent = 'Эпоха ' + S.epoch + ' · ' + EPOCH_NAMES[S.epoch] + epochSuffix; }
 refreshEpoch();
 
 // --- панель кольца ---
@@ -1205,6 +1372,94 @@ function renderLook(){
 $('lookBtn').addEventListener('click', () => { unlockAudio(); S.flags.lookOpened = true; $('dbgBtn').classList.remove('glow'); $('dbg').classList.remove('open'); renderLook(); $('lookPanel').classList.add('open'); });
 $('lookClose').addEventListener('click', () => $('lookPanel').classList.remove('open'));
 if (!S.flags.lookOpened) $('dbgBtn').classList.add('glow');   // подсветка ⚙️, пока сюрпризы ни разу не открывали
+
+// --- ограничение времени игры (хранится отдельно от сохранения, защищено паролем) ---
+const LIMIT_KEY = SAVE_KEY + '_limit';
+const LIM = (() => { const d = { pw:null, mins:0, day:'', used:0, bonus:0 }; try { return Object.assign(d, JSON.parse(localStorage.getItem(LIMIT_KEY) || '{}')); } catch(_){ return d; } })();
+const todayStr = () => { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); };
+function saveLimit(){ try { localStorage.setItem(LIMIT_KEY, JSON.stringify(LIM)); } catch(_){} }
+function limitLeft(){
+  if (!LIM.mins) return Infinity;
+  if (LIM.day !== todayStr()){ LIM.day = todayStr(); LIM.used = 0; LIM.bonus = 0; warned5 = false; saveLimit(); }
+  return LIM.mins * 60 + LIM.bonus - LIM.used;
+}
+let locked = false, limSaveT = 0, warned5 = false, limitAuthed = false;
+function limitTick(realDt){
+  if (!LIM.mins || locked || document.hidden) return;
+  LIM.used += realDt;
+  limSaveT -= realDt; if (limSaveT <= 0){ limSaveT = 5; saveLimit(); }
+  const left = limitLeft();
+  if (left <= 300 && left > 0 && !warned5){ warned5 = true; banner('⏰ Осталось 5 минут', 'Скоро на сегодня всё — успей доделать начатое ❤️'); }
+  if (left <= 0) lockGame();
+}
+function lockGame(){
+  locked = true; saveLimit(); save(); resetInput();
+  for (const id of ['dbg', 'limitPanel', 'storePanel', 'peoplePanel', 'ringPanel', 'ordersPanel', 'lookPanel']) $(id).classList.remove('open');
+  $('lockText').textContent = 'Время на сегодня закончилось (' + LIM.mins + ' мин). Отдохни, моя хорошая ❤️ Завтра можно снова. Продлить может только тот, кто знает пароль.';
+  $('lockPw').value = ''; $('lockErr').textContent = '';
+  $('lockScreen').classList.add('open');
+}
+document.querySelectorAll('#lockScreen .lkbtns button').forEach(b => b.addEventListener('click', () => {
+  if (pwHash($('lockPw').value) !== LIM.pw){ $('lockErr').textContent = 'Неверный пароль 🙈'; sfxNo(); return; }
+  LIM.bonus += (+b.dataset.add) * 60; warned5 = false; saveLimit();
+  locked = false; $('lockScreen').classList.remove('open'); $('lockPw').blur(); last = performance.now();
+  banner('⏰ Продлено на ' + b.dataset.add + ' мин', 'Приятной игры ❤️');
+}));
+function limitText(){
+  if (!LIM.mins) return 'Сейчас: без ограничения';
+  const left = Math.max(0, limitLeft());
+  return 'Лимит ' + LIM.mins + ' мин в день · сыграно сегодня ' + Math.floor(LIM.used / 60) + ' мин · осталось ' + Math.ceil(left / 60) + ' мин';
+}
+function renderLimit(msg){
+  const box = $('limitBody'); box.innerHTML = '';
+  const err = el('div', 'limErr', msg || '');
+  if (!LIM.pw){
+    box.append(el('p', '', 'Здесь можно ограничить, сколько в день можно играть. Сначала придумай пароль — его будешь знать только ты. Без пароля лимит не поменять и время не продлить.'));
+    const a = el('input'), b = el('input'); a.type = b.type = 'password'; a.placeholder = 'новый пароль'; b.placeholder = 'ещё раз';
+    const ok = el('button', 'sbig', 'Сохранить пароль');
+    ok.addEventListener('click', () => {
+      if (a.value.trim().length < 3) return renderLimit('Пароль — хотя бы 3 символа');
+      if (a.value !== b.value) return renderLimit('Пароли не совпадают');
+      LIM.pw = pwHash(a.value); saveLimit(); limitAuthed = true; sfxBuy(); renderLimit();
+    });
+    box.append(a, b, ok, err); return;
+  }
+  if (!limitAuthed){
+    box.append(el('p', '', limitText()), el('p', '', 'Чтобы поменять настройки, введи пароль.'));
+    const a = el('input'); a.type = 'password'; a.placeholder = 'пароль';
+    const ok = el('button', 'sbig', 'Войти');
+    ok.addEventListener('click', () => { if (pwHash(a.value) === LIM.pw){ limitAuthed = true; renderLimit(); } else renderLimit('Неверный пароль 🙈'); });
+    box.append(a, ok, err); return;
+  }
+  box.append(el('div', 'big', limitText()));
+  box.append(el('div', 'lt', 'Сколько можно играть в день:'));
+  const opts = el('div', 'limbtns');
+  for (const m of [0, 30, 45, 60, 90, 120, 180]){
+    const b = el('button', LIM.mins === m ? 'cur' : '', m ? (m < 60 ? m + ' мин' : (m / 60) + ' ч') : 'Без лимита');
+    b.addEventListener('click', () => { LIM.mins = m; limitLeft(); saveLimit(); sfxClick(); renderLimit(); });
+    opts.append(b);
+  }
+  box.append(opts);
+  if (LIM.mins){
+    box.append(el('div', 'lt', 'Продлить на сегодня:'));
+    const ext = el('div', 'limbtns');
+    for (const m of [15, 30, 60]){
+      const b = el('button', '', '+' + m + ' мин');
+      b.addEventListener('click', () => { LIM.bonus += m * 60; warned5 = false; saveLimit(); sfxClick(); renderLimit('Продлено на ' + m + ' мин ✓'); });
+      ext.append(b);
+    }
+    const rs = el('button', '', 'Обнулить сегодня');
+    rs.addEventListener('click', () => { LIM.used = 0; LIM.bonus = 0; warned5 = false; saveLimit(); sfxClick(); renderLimit('Счётчик на сегодня обнулён ✓'); });
+    ext.append(rs); box.append(ext);
+  }
+  box.append(el('div', 'lt', 'Сменить пароль:'));
+  const np = el('input'); np.type = 'password'; np.placeholder = 'новый пароль';
+  const chg = el('button', 'sbig', 'Сменить пароль');
+  chg.addEventListener('click', () => { if (np.value.trim().length < 3) return renderLimit('Пароль — хотя бы 3 символа'); LIM.pw = pwHash(np.value); saveLimit(); renderLimit('Пароль изменён ✓'); });
+  box.append(np, chg, err);
+}
+$('limitBtn').addEventListener('click', () => { limitAuthed = false; $('dbg').classList.remove('open'); renderLimit(); $('limitPanel').classList.add('open'); });
+$('limitClose').addEventListener('click', () => { limitAuthed = false; $('limitPanel').classList.remove('open'); });
 
 // --- доска заказов ---
 $('ordClose').addEventListener('click', () => $('ordersPanel').classList.remove('open'));
@@ -1507,7 +1762,9 @@ function bestZone(job){ const zs = jobZones(job); return zs.length ? zs[zs.lengt
 const wMood = w => w.hungry ? 0.3 : (w.good ? 1.25 : 1);
 function wSpeed(w){ return 110 * W_SPEED * wMood(w); }
 function wRate(w){ return 0.8 * W_SPEED * wMood(w); }
-const wCap = w => w.data.job === 'carrier' ? W_BAG * 3 : W_BAG;
+// Носильщик: носит вдвое больше обычного жителя, но берёт 25% за работу (самому продавать выгоднее)
+const CARRIER_CUT = 0.75;
+const wCap = w => w.data.job === 'carrier' ? W_BAG * 2 : W_BAG;
 // пересекает ли отрезок a→b круг (центр c, радиус r)
 function segHitsCircle(ax, ay, bx, by, cx, cy, r){
   const dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy;
@@ -1585,7 +1842,8 @@ function updateWorker(w, dt){
   if (job === 'carrier'){
     if (w.state === 'toMarket'){
       if (walkTo(w, MARKET_POS.x + (w.id % 5 - 2) * 10, MARKET_POS.y + 20, dt)){
-        const v = sellValue(w.bag); S.coins += v; S.stats.earned += v; trackCoins(v);
+        const v = sellValue(w.bag) * CARRIER_CUT; S.coins += v; S.stats.earned += v; trackCoins(v);
+        w.wait = 1;   // рассчитывается у прилавка
         if (onScreen(w.x, w.y)){ spawnText(w.x, w.y - 50, '+' + fmt(v), '#ffd84a', 13); sfxCoin(); }
         w.bag = emptyItems(); w.bagN = 0; w.state = 'toStore';
       }
@@ -2021,6 +2279,7 @@ function wakeNode(n){ if (!n.busy){ n.busy = true; busyNodes.push(n); } }
 const ringPos = [];
 function update(dt){
   time += dt;
+  if (zoomSettle > 0) zoomSettle -= dt;
   slowT -= dt; const slow = slowT <= 0; if (slow) slowT = 0.2;
   const iv = inputVec();
   P.moving = Math.hypot(iv.x, iv.y) > 0.05;
@@ -2226,7 +2485,7 @@ function invalidateGround(){ chunkCache.clear(); }
 function getChunk(ci, cj){
   const key = ci * 100 + cj, sc = SCALE * DPR;
   let c = chunkCache.get(key);
-  if (c && c.sc === sc){ chunkCache.delete(key); chunkCache.set(key, c); return c.cv; }   // свежий — в конец очереди
+  if (c && (c.sc === sc || zoomSettle > 0)){ chunkCache.delete(key); chunkCache.set(key, c); return c.cv; }   // свежий (или идёт щипок) — в конец очереди
   const size = CHUNK + CH_M * 2, px = Math.ceil(size * sc);
   const cvs = document.createElement('canvas'); cvs.width = cvs.height = px;
   const x0 = ci * CHUNK - CH_M, y0 = cj * CHUNK - CH_M, saved = ctx;
@@ -2460,28 +2719,12 @@ function padInfo(p){
   }
   return I;
 }
-function drawPad(p){
-  if (!p.vis) return;
-  // надписи на клетке пересчитываем 5 раз в секунду, а не каждый кадр
-  if (!p.info || time >= p.infoT || p.flash > 0){ p.info = padInfo(p); p.infoT = time + 0.2; }
-  const I = p.info, x = p.x - p.w / 2, y = p.y - p.h / 2;
-  if (p.kind === 'shop' && shopLevel(p.shop)){ const st = shopState[p.shop.id]; I.prog = st.idle ? 0 : st.prog; }
-  ctx.save();
-  if (p.reveal && p.reveal < 1){
-    const k = Math.max(0.01, easeOutBack(p.reveal));
-    ctx.translate(p.x, p.y); ctx.scale(k, k); ctx.translate(-p.x, -p.y);
-  }
-  if (I.dim) ctx.globalAlpha = 0.72;
+// неизменная часть клетки (рисуется в картинку клетки)
+function drawPadBody(p, I, x, y){
   ctx.fillStyle = 'rgba(0,0,0,.22)'; rrect(x + 3, y + 5, p.w, p.h, 14); ctx.fill();
   ctx.fillStyle = I.fill; rrect(x, y, p.w, p.h, 14); ctx.fill();
   ctx.lineWidth = p.inside ? 4 : 2.5; ctx.setLineDash(p.inside ? [] : [8, 6]); ctx.strokeStyle = I.edge;
   rrect(x, y, p.w, p.h, 14); ctx.stroke(); ctx.setLineDash([]);
-  if (p.inside && p.kind !== 'market' && p.kind !== 'store' && p.hold > 0){
-    const k = clamp(p.hold / 0.6, 0, 1);
-    ctx.save(); rrect(x, y, p.w, p.h, 14); ctx.clip();
-    ctx.fillStyle = 'rgba(255,255,255,.25)'; ctx.fillRect(x, y + p.h * (1 - k), p.w, p.h * k); ctx.restore();
-  }
-  if (p.flash > 0){ ctx.fillStyle = `rgba(255,255,200,${Math.min(1, p.flash)})`; rrect(x, y, p.w, p.h, 14); ctx.fill(); }
   const hasL1 = !!I.l1;
   emoji(I.icon, p.x, p.y - (hasL1 ? 22 : 16), 24);
   text(I.title, p.x, p.y + (hasL1 ? 1 : 8), I.title.length > 11 ? 9 : 11, '#fff', 800);
@@ -2490,7 +2733,38 @@ function drawPad(p){
   ctx.font = '800 ' + (I.l2.length > 14 ? 9.5 : 11.5) + 'px system-ui,sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   const ly = p.y + (hasL1 ? 30 : 24);
   ctx.strokeText(I.l2, p.x, ly); ctx.fillStyle = I.l2c; ctx.fillText(I.l2, p.x, ly);
-  // полоска выработки цеха
+}
+function drawPad(p){
+  if (!p.vis) return;
+  // надписи на клетке пересчитываем 5 раз в секунду, а не каждый кадр
+  if (!p.info || time >= p.infoT || p.flash > 0){ p.info = padInfo(p); p.infoT = time + 0.2; }
+  const I = p.info, x = p.x - p.w / 2, y = p.y - p.h / 2;
+  if (p.kind === 'shop' && shopLevel(p.shop)){ const st = shopState[p.shop.id]; I.prog = st.idle ? 0 : st.prog; }
+  // Клетка с текстом и эмодзи рисуется в картинку один раз и перерисовывается, только когда меняется надпись.
+  // Текст и эмодзи на айфоне — самое дорогое в отрисовке, раньше это делалось каждый кадр.
+  const sc = SCALE * DPR, bw = p.w + 9, bh = p.h + 11;
+  const sig = I.icon + '|' + I.title + '|' + I.l1 + '|' + I.l2 + '|' + I.l2c + '|' + I.fill + '|' + I.edge + '|' + (p.inside ? 1 : 0);
+  if (sig !== p.bmpSig || (sc !== p.bmpSc && !(zoomSettle > 0 && p.bmp))){
+    p.bmpSig = sig; p.bmpSc = sc;
+    const c = p.bmp || (p.bmp = document.createElement('canvas'));
+    c.width = Math.ceil(bw * sc); c.height = Math.ceil(bh * sc);
+    const saved = ctx; ctx = c.getContext('2d');
+    try { ctx.setTransform(sc, 0, 0, sc, -(x - 3) * sc, -(y - 3) * sc); drawPadBody(p, I, x, y); } finally { ctx = saved; }
+  }
+  ctx.save();
+  if (p.reveal && p.reveal < 1){
+    const k = Math.max(0.01, easeOutBack(p.reveal));
+    ctx.translate(p.x, p.y); ctx.scale(k, k); ctx.translate(-p.x, -p.y);
+  }
+  if (I.dim) ctx.globalAlpha = 0.72;
+  ctx.drawImage(p.bmp, x - 3, y - 3, bw, bh);
+  // живые слои поверх: заполнение при удержании, вспышка покупки, полоска выработки цеха
+  if (p.inside && p.kind !== 'market' && p.kind !== 'store' && p.hold > 0){
+    const k = clamp(p.hold / 0.6, 0, 1);
+    ctx.save(); rrect(x, y, p.w, p.h, 14); ctx.clip();
+    ctx.fillStyle = 'rgba(255,255,255,.25)'; ctx.fillRect(x, y + p.h * (1 - k), p.w, p.h * k); ctx.restore();
+  }
+  if (p.flash > 0){ ctx.fillStyle = `rgba(255,255,200,${Math.min(1, p.flash)})`; rrect(x, y, p.w, p.h, 14); ctx.fill(); }
   if (I.prog){ ctx.fillStyle = 'rgba(0,0,0,.4)'; ctx.fillRect(x + 8, y + p.h - 8, p.w - 16, 4); ctx.fillStyle = '#b6ff8a'; ctx.fillRect(x + 8, y + p.h - 8, (p.w - 16) * I.prog, 4); }
   ctx.restore();
   // метка «новое»
@@ -2658,6 +2932,21 @@ function drawWheat(n, full){
     ctx.fillStyle = '#e8c860'; ctx.beginPath(); ctx.ellipse(i + sway, -23, 2.6, 6, 0, 0, 7); ctx.fill();
   }
 }
+// Деревья и кусты одной породы выглядят одинаково — рисуем каждую породу в картинку один раз
+const spriteCache = {};
+function drawSprite(key, n, s, draw){
+  const sc = SCALE * DPR;
+  let sp = spriteCache[key];
+  if (!sp || (sp.sc !== sc && !(zoomSettle > 0))){
+    const x0 = -36 * s, y0 = -76 * s, w = 72 * s, h = 80 * s;
+    const c = sp ? sp.cv : document.createElement('canvas');
+    c.width = Math.ceil(w * sc); c.height = Math.ceil(h * sc);
+    const saved = ctx; ctx = c.getContext('2d');
+    try { ctx.setTransform(sc, 0, 0, sc, -x0 * sc, -y0 * sc); draw(); } finally { ctx = saved; }
+    sp = spriteCache[key] = { cv: c, sc, x0, y0, w, h };
+  }
+  ctx.drawImage(sp.cv, sp.x0, sp.y0, sp.w, sp.h);
+}
 function drawGreatTree(n){
   const x = n.x, y = n.y;
   ctx.save();
@@ -2747,7 +3036,9 @@ function drawNode(n){
     ctx.rotate(n.fallDir * p * p * Math.PI / 2);
     ctx.globalAlpha = 1 - clamp((n.t - 0.45) / 0.25, 0, 1);
   }
-  if (k === 'tree') drawTreeShape(n, s); else if (k === 'bush') drawBushShape(n, true); else drawRockShape(n, s);
+  if (k === 'tree') drawSprite(n.type, n, s, () => drawTreeShape(n, s));
+  else if (k === 'bush') drawSprite('bush', n, 1, () => drawBushShape(n, true));
+  else drawRockShape(n, s);
   ctx.restore();
   if (n.state === 'alive' && n.showHp > 0 && n.hp < n.N.hp){
     const w = 36, y = n.y - (k === 'tree' ? 76 : 36) * s;
@@ -2969,16 +3260,18 @@ function drawWorker(w){
 // Забавные топорики (только у игрока)
 let rainbowT = -1, rainbowG = null;
 function drawFunnyAxe(skin, a){
-  ctx.rotate(a * 3);
   if (skin === 'hearts'){
-    ctx.fillStyle = '#ff9ec4'; ctx.fillRect(-2.5, -12, 5, 28);
-    const s = 1 + Math.sin(time * 8) * 0.08;
-    ctx.save(); ctx.translate(6, -14); ctx.scale(s, s);
+    // настоящее сердечко: без ручки, всегда стоит прямо и только пульсирует
+    const s = 1.15 + Math.sin(time * 7 + a) * 0.12;
+    ctx.scale(s, s);
     ctx.fillStyle = '#ff3d7f'; ctx.beginPath();
-    ctx.moveTo(0, 8); ctx.bezierCurveTo(-14, -2, -8, -14, 0, -6); ctx.bezierCurveTo(8, -14, 14, -2, 0, 8); ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,.6)'; ctx.beginPath(); ctx.arc(-4, -6, 2, 0, 7); ctx.fill();
-    ctx.restore();
-  } else if (skin === 'flowers'){
+    ctx.moveTo(0, 9); ctx.bezierCurveTo(-15, -1, -10, -15, 0, -7); ctx.bezierCurveTo(10, -15, 15, -1, 0, 9); ctx.fill();
+    ctx.strokeStyle = '#ff9ec4'; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.beginPath(); ctx.ellipse(-5, -6, 2.6, 1.8, -0.6, 0, 7); ctx.fill();
+    return;
+  }
+  ctx.rotate(a * 3);
+  if (skin === 'flowers'){
     ctx.strokeStyle = '#4caf50'; ctx.lineWidth = 4; ctx.lineCap = 'round';
     ctx.beginPath(); ctx.moveTo(0, 16); ctx.quadraticCurveTo(-4, 0, 0, -10); ctx.stroke();
     ctx.fillStyle = '#7bd36b'; ctx.beginPath(); ctx.ellipse(-6, 4, 6, 3, -0.6, 0, 7); ctx.fill();
@@ -3005,7 +3298,7 @@ function drawFunnyAxe(skin, a){
     ctx.stroke(); ctx.restore();
   }
 }
-const AXE_TRAIL = { hearts:'rgba(255,110,160,.3)', flowers:'rgba(255,210,230,.3)', candy:'rgba(255,140,200,.28)' };
+const AXE_TRAIL = { hearts:'rgba(255,190,215,.14)', flowers:'rgba(255,210,230,.3)', candy:'rgba(255,140,200,.28)' };
 function drawTool(t, a, skin){
   ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.beginPath(); ctx.ellipse(0, 16, 8, 3, 0, 0, 7); ctx.fill();
   if (t === 'axe' && skin && skin !== 'default'){ drawFunnyAxe(skin, a); return; }
@@ -3363,7 +3656,23 @@ function updateQuest(dt){
 }
 
 // ================== НАСТРОЙКИ ==================
-$('dbgBtn').addEventListener('click', () => $('dbg').classList.toggle('open'));
+$('dbgBtn').addEventListener('click', () => { unlockAudio(); $('dbg').classList.add('open'); });
+$('dbgClose').addEventListener('click', () => $('dbg').classList.remove('open'));
+const zoomBtn = k => { setZoom(ZOOM * k); zoomSettle = 0; sfxClick(); spawnText(P.x, P.y - 90, '🔍 ' + Math.round(ZOOM * 100) + '%', '#fff', 16); };
+$('zoomIn').addEventListener('click', () => zoomBtn(1.15));
+$('zoomOut').addEventListener('click', () => zoomBtn(1 / 1.15));
+
+// --- авто-качество: если телефон не успевает, чуть снижаем чёткость (только вниз, без скачков туда-обратно) ---
+let qWork = 0, qInt = 0, qN = 0;
+function autoQuality(workMs){
+  qWork += workMs; qN++;
+  if (qN < 150) return;
+  const avg = qWork / qN; qWork = 0; qN = 0;
+  // в режиме энергосбережения айфон сам ограничивает 30 кадров — это не наша работа, на него не реагируем
+  if (avg > 8 && DPR > 1){ dprCap = Math.max(1, Math.round((DPR - 0.25) * 4) / 4); resize(); invalidateGround(); }
+}
+// нажатие мимо окна закрывает его (для настроек, склада и окна сюрпризов)
+for (const id of ['dbg', 'storePanel', 'lookPanel']) $(id).addEventListener('click', e => { if (e.target.id === id) $(id).classList.remove('open'); });
 $('snd').addEventListener('click', e => { soundOn = !soundOn; e.target.textContent = '🔊 Звук: ' + (soundOn ? 'вкл' : 'выкл'); unlockAudio(); });
 $('mus').textContent = '🎵 Музыка: ' + (musicOn ? 'вкл' : 'выкл');
 $('mus').addEventListener('click', e => {
@@ -3435,12 +3744,12 @@ $('installInfo').textContent = isStandalone
   ? '✅ Игра установлена как приложение.'
   : (isIOS ? '📱 Установить: в Safari нажми «Поделиться» → «На экран Домой».'
            : '📱 На айфоне: открой ссылку в Safari → «Поделиться» → «На экран Домой».');
-$('installInfo').textContent += '  ·  Версия ' + GAME_VERSION;
+$('installInfo').textContent += '\nВерсия ' + GAME_VERSION; $('installInfo').style.whiteSpace = 'pre-line';
 
 // --- обновление игры ---
 async function checkUpdate(){
   const b = $('updBtn'); b.disabled = true; b.textContent = '⏳ Проверяю...';
-  const done = (txt) => { b.textContent = txt; setTimeout(() => { b.textContent = '🔄 Проверить обновление'; b.disabled = false; }, 3000); };
+  const done = (txt) => { b.textContent = txt; setTimeout(() => { b.textContent = '🔄 Обновление'; b.disabled = false; }, 3000); };
   let fresh;
   try {
     const r = await fetch('index.html?check=' + Date.now(), { cache: 'no-store' });
@@ -3485,6 +3794,7 @@ restoreBoss();
 $('offClose').addEventListener('click', () => { $('offPanel').classList.remove('open'); pop('coins'); save(); });
 initQuests();
 applyOffline();
+if (LIM.mins && limitLeft() <= 0) lockGame();
 
 // ================== ЦИКЛ ==================
 resize();
@@ -3493,9 +3803,16 @@ let frameErrShown = false;
 function frame(now){
   // следующий кадр заказываем сразу: даже если ниже что-то сломается, игра не замрёт
   requestAnimationFrame(frame);
-  const dt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now;
+  const realDt = Math.max(0, (now - last) / 1000), dt = Math.min(0.05, realDt); last = now;
+  limitTick(Math.min(realDt, 1));
+  if (locked){                            // время на сегодня вышло — игра стоит
+    if (!LIM.mins || limitLeft() > 0){ locked = false; $('lockScreen').classList.remove('open'); }   // наступил новый день или лимит сняли
+    return;
+  }
   try {
+    const t0 = performance.now();
     update(dt); render(); booted = true;
+    autoQuality(performance.now() - t0);
     miniT -= dt; if (miniT <= 0){ miniT = 0.3; drawMini(); }
   } catch(e){
     console.error(e);
