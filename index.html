@@ -269,8 +269,8 @@
   <div style="font-size:64px">🌙</div>
   <h2>На сегодня всё!</h2>
   <p id="lockText"></p>
-  <input id="lockPw" type="password" placeholder="пароль" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false">
-  <div class="lkbtns"><button data-add="15">+15 мин</button><button data-add="30">+30 мин</button><button data-add="60">+1 час</button></div>
+  <input id="lockPw" type="text" placeholder="волшебное слово" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false">
+  <div class="lkbtns"><button id="lockGo">✨ Ввести слово</button></div>
   <div id="lockErr"></div>
 </div></div>
 <div id="modal" class="sheet"><div class="box">
@@ -344,7 +344,7 @@
 <script>
 "use strict";
 // Номер версии: меняй при каждом выпуске — по нему кнопка «Проверить обновление» понимает, что есть новое
-const GAME_VERSION = '1.18';
+const GAME_VERSION = '1.19';
 // ================== БАЗА ==================
 const cv = document.getElementById('c');
 let ctx = cv.getContext('2d');    // let: при подготовке кусков земли временно рисуем в другой холст
@@ -1111,7 +1111,7 @@ function refreshHud(){
   if (b !== shownBag){ shownBag = b; $('bagN').textContent = b; $('bag').classList.toggle('full', sumRes(S.bag) >= BAG_CAP); }
   if ($('storePanel').classList.contains('open') && time - storeShownT > 1) renderStore();
   // остаток времени игры — рядом с эпохой, когда меньше 15 минут
-  const left = typeof LIM !== 'undefined' && LIM.mins ? limitLeft() : Infinity;
+  const left = typeof LIM !== 'undefined' ? limitLeft() : Infinity;
   const suf = left < 15 * 60 ? ' · ⏳' + Math.max(0, Math.ceil(left / 60)) + ' мин' : '';
   if (suf !== epochSuffix){ epochSuffix = suf; refreshEpoch(); }
 }
@@ -1373,19 +1373,51 @@ $('lookBtn').addEventListener('click', () => { unlockAudio(); S.flags.lookOpened
 $('lookClose').addEventListener('click', () => $('lookPanel').classList.remove('open'));
 if (!S.flags.lookOpened) $('dbgBtn').classList.add('glow');   // подсветка ⚙️, пока сюрпризы ни разу не открывали
 
-// --- ограничение времени игры (хранится отдельно от сохранения, защищено паролем) ---
+// --- ограничение времени игры: 20 бесплатных минут в день, дальше — волшебные слова ---
+// (хранится отдельно от сохранения; в коде только отпечатки слов, сами слова знает только он)
 const LIMIT_KEY = SAVE_KEY + '_limit';
-const LIM = (() => { const d = { pw:null, mins:0, day:'', used:0, bonus:0 }; try { return Object.assign(d, JSON.parse(localStorage.getItem(LIMIT_KEY) || '{}')); } catch(_){ return d; } })();
+const FREE_MIN = 20;
+// отпечаток слова → минуты (-1 = весь день, 0 = главный ключ: включить/выключить ограничение)
+const TIME_WORDS = {"4df31412":0,"35c1bc97":30,"d369fc30":30,"48d79559":30,"d1d8df56":30,"cc960ad1":30,"9feb3dfd":30,"442e1689":30,"8b2a5e61":30,"1c4570a2":30,"e90f25b6":30,"50cdddfd":30,"bb5eab05":30,"d81d1bee":60,"a7565a50":60,"86f031d3":60,"73893a42":60,"c026e4e8":60,"477c362":60,"ab604f60":60,"85d6f30b":60,"7a162ab2":60,"f53f8c7e":60,"5eb93f1f":120,"ae5764b8":120,"ff1d640a":120,"b14d4499":120,"cfb5e798":120,"f46b4e31":120,"396054a":120,"d924f8b6":120,"6b459874":240,"3012fedc":240,"b229484a":240,"8f24166c":240,"c2ddbf51":240,"df13bc77":240,"117cd41f":-1,"4e66cd22":-1,"26ff3a6d":-1,"404b18ca":-1,"c4b1734f":-1};
+const LIM = (() => {
+  const d = { v:2, on:true, day:'', used:0, bonus:0, allDay:false, words:[] };
+  try {
+    const s = JSON.parse(localStorage.getItem(LIMIT_KEY) || '{}');
+    if (s.v === 2) return Object.assign(d, s);
+    if (s.day){ d.day = s.day; d.used = s.used || 0; }   // старый лимит с паролем — переносим только «сыграно сегодня»
+  } catch(_){}
+  return d;
+})();
 const todayStr = () => { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); };
 function saveLimit(){ try { localStorage.setItem(LIMIT_KEY, JSON.stringify(LIM)); } catch(_){} }
 function limitLeft(){
-  if (!LIM.mins) return Infinity;
-  if (LIM.day !== todayStr()){ LIM.day = todayStr(); LIM.used = 0; LIM.bonus = 0; warned5 = false; saveLimit(); }
-  return LIM.mins * 60 + LIM.bonus - LIM.used;
+  if (!LIM.on) return Infinity;
+  if (LIM.day !== todayStr()){ LIM.day = todayStr(); LIM.used = 0; LIM.bonus = 0; LIM.allDay = false; warned5 = false; saveLimit(); }
+  if (LIM.allDay) return Infinity;
+  return FREE_MIN * 60 + LIM.bonus - LIM.used;
 }
-let locked = false, limSaveT = 0, warned5 = false, limitAuthed = false;
+const minsText = m => m < 60 ? m + ' мин' : (m / 60) + (m === 60 ? ' час' : ' часа');
+// ввод слова; возвращает текст результата
+function useWord(raw){
+  const h = pwHash(raw), m = TIME_WORDS[h];
+  if (!String(raw || '').trim()) return 'Сначала напиши слово';
+  if (m === undefined){ sfxNo(); return 'Такого слова нет 🙈'; }
+  if (m === 0){
+    LIM.on = !LIM.on; warned5 = false; saveLimit(); sfxBuy();
+    return LIM.on ? 'Ограничение включено ✓' : 'Ограничение выключено ✓';
+  }
+  if (LIM.words.includes(h)){ sfxNo(); return 'Это слово уже использовано 🙈 Нужно новое'; }
+  limitLeft();   // смена дня, если надо
+  LIM.words.push(h);
+  if (m < 0) LIM.allDay = true; else LIM.bonus += m * 60;
+  warned5 = false; saveLimit(); sfxBuy();
+  const t = m < 0 ? 'Весь день твой!' : '+' + minsText(m) + '!';
+  banner('✨ ' + t, 'Приятной игры, моя хорошая ❤️');
+  return '✨ ' + t;
+}
+let locked = false, limSaveT = 0, warned5 = false;
 function limitTick(realDt){
-  if (!LIM.mins || locked || document.hidden) return;
+  if (!LIM.on || locked || document.hidden) return;
   LIM.used += realDt;
   limSaveT -= realDt; if (limSaveT <= 0){ limSaveT = 5; saveLimit(); }
   const left = limitLeft();
@@ -1395,71 +1427,39 @@ function limitTick(realDt){
 function lockGame(){
   locked = true; saveLimit(); save(); resetInput();
   for (const id of ['dbg', 'limitPanel', 'storePanel', 'peoplePanel', 'ringPanel', 'ordersPanel', 'lookPanel']) $(id).classList.remove('open');
-  $('lockText').textContent = 'Время на сегодня закончилось (' + LIM.mins + ' мин). Отдохни, моя хорошая ❤️ Завтра можно снова. Продлить может только тот, кто знает пароль.';
+  $('lockText').textContent = 'Время закончилось. Чтобы играть дальше, нужно волшебное слово — его можно заработать, выполнив задание ❤️ Или отдохни, моя хорошая: завтра снова будет ' + FREE_MIN + ' бесплатных минут.';
   $('lockPw').value = ''; $('lockErr').textContent = '';
   $('lockScreen').classList.add('open');
 }
-document.querySelectorAll('#lockScreen .lkbtns button').forEach(b => b.addEventListener('click', () => {
-  if (pwHash($('lockPw').value) !== LIM.pw){ $('lockErr').textContent = 'Неверный пароль 🙈'; sfxNo(); return; }
-  LIM.bonus += (+b.dataset.add) * 60; warned5 = false; saveLimit();
-  locked = false; $('lockScreen').classList.remove('open'); $('lockPw').blur(); last = performance.now();
-  banner('⏰ Продлено на ' + b.dataset.add + ' мин', 'Приятной игры ❤️');
-}));
+function lockTry(){
+  const r = useWord($('lockPw').value);
+  if (limitLeft() > 0){
+    locked = false; $('lockScreen').classList.remove('open'); $('lockPw').blur(); last = performance.now();
+  } else $('lockErr').textContent = r;
+}
+$('lockGo').addEventListener('click', lockTry);
+$('lockPw').addEventListener('keydown', e => { if (e.key === 'Enter') lockTry(); });
 function limitText(){
-  if (!LIM.mins) return 'Сейчас: без ограничения';
-  const left = Math.max(0, limitLeft());
-  return 'Лимит ' + LIM.mins + ' мин в день · сыграно сегодня ' + Math.floor(LIM.used / 60) + ' мин · осталось ' + Math.ceil(left / 60) + ' мин';
+  if (!LIM.on) return 'Без ограничения';
+  const left = limitLeft();
+  if (left === Infinity) return 'Сегодня весь день твой ✨';
+  return 'Сыграно сегодня ' + Math.floor(LIM.used / 60) + ' мин · осталось ' + Math.max(0, Math.ceil(left / 60)) + ' мин';
 }
 function renderLimit(msg){
   const box = $('limitBody'); box.innerHTML = '';
   const err = el('div', 'limErr', msg || '');
-  if (!LIM.pw){
-    box.append(el('p', '', 'Здесь можно ограничить, сколько в день можно играть. Сначала придумай пароль — его будешь знать только ты. Без пароля лимит не поменять и время не продлить.'));
-    const a = el('input'), b = el('input'); a.type = b.type = 'password'; a.placeholder = 'новый пароль'; b.placeholder = 'ещё раз';
-    const ok = el('button', 'sbig', 'Сохранить пароль');
-    ok.addEventListener('click', () => {
-      if (a.value.trim().length < 3) return renderLimit('Пароль — хотя бы 3 символа');
-      if (a.value !== b.value) return renderLimit('Пароли не совпадают');
-      LIM.pw = pwHash(a.value); saveLimit(); limitAuthed = true; sfxBuy(); renderLimit();
-    });
-    box.append(a, b, ok, err); return;
-  }
-  if (!limitAuthed){
-    box.append(el('p', '', limitText()), el('p', '', 'Чтобы поменять настройки, введи пароль.'));
-    const a = el('input'); a.type = 'password'; a.placeholder = 'пароль';
-    const ok = el('button', 'sbig', 'Войти');
-    ok.addEventListener('click', () => { if (pwHash(a.value) === LIM.pw){ limitAuthed = true; renderLimit(); } else renderLimit('Неверный пароль 🙈'); });
-    box.append(a, ok, err); return;
-  }
   box.append(el('div', 'big', limitText()));
-  box.append(el('div', 'lt', 'Сколько можно играть в день:'));
-  const opts = el('div', 'limbtns');
-  for (const m of [0, 30, 45, 60, 90, 120, 180]){
-    const b = el('button', LIM.mins === m ? 'cur' : '', m ? (m < 60 ? m + ' мин' : (m / 60) + ' ч') : 'Без лимита');
-    b.addEventListener('click', () => { LIM.mins = m; limitLeft(); saveLimit(); sfxClick(); renderLimit(); });
-    opts.append(b);
-  }
-  box.append(opts);
-  if (LIM.mins){
-    box.append(el('div', 'lt', 'Продлить на сегодня:'));
-    const ext = el('div', 'limbtns');
-    for (const m of [15, 30, 60]){
-      const b = el('button', '', '+' + m + ' мин');
-      b.addEventListener('click', () => { LIM.bonus += m * 60; warned5 = false; saveLimit(); sfxClick(); renderLimit('Продлено на ' + m + ' мин ✓'); });
-      ext.append(b);
-    }
-    const rs = el('button', '', 'Обнулить сегодня');
-    rs.addEventListener('click', () => { LIM.used = 0; LIM.bonus = 0; warned5 = false; saveLimit(); sfxClick(); renderLimit('Счётчик на сегодня обнулён ✓'); });
-    ext.append(rs); box.append(ext);
-  }
-  box.append(el('div', 'lt', 'Сменить пароль:'));
-  const np = el('input'); np.type = 'password'; np.placeholder = 'новый пароль';
-  const chg = el('button', 'sbig', 'Сменить пароль');
-  chg.addEventListener('click', () => { if (np.value.trim().length < 3) return renderLimit('Пароль — хотя бы 3 символа'); LIM.pw = pwHash(np.value); saveLimit(); renderLimit('Пароль изменён ✓'); });
-  box.append(np, chg, err);
+  box.append(el('p', '', LIM.on
+    ? 'Каждый день первые ' + FREE_MIN + ' минут — бесплатно. Дальше игра попросит волшебное слово: за выполненное задание ты получаешь слово, и оно добавляет время (30 мин, 1 ч, 2 ч, 4 ч или весь день). Каждое слово работает только один раз. Слово можно ввести и заранее — время сложится.'
+    : 'Ограничение времени выключено.'));
+  const a = el('input'); a.type = 'text'; a.placeholder = 'волшебное слово';
+  a.autocapitalize = 'off'; a.setAttribute('autocorrect', 'off'); a.autocomplete = 'off'; a.spellcheck = false;
+  const ok = el('button', 'sbig', '✨ Ввести слово');
+  ok.addEventListener('click', () => renderLimit(useWord(a.value)));
+  box.append(a, ok, err);
 }
-$('limitBtn').addEventListener('click', () => { limitAuthed = false; $('dbg').classList.remove('open'); renderLimit(); $('limitPanel').classList.add('open'); });
-$('limitClose').addEventListener('click', () => { limitAuthed = false; $('limitPanel').classList.remove('open'); });
+$('limitBtn').addEventListener('click', () => { $('dbg').classList.remove('open'); renderLimit(); $('limitPanel').classList.add('open'); });
+$('limitClose').addEventListener('click', () => $('limitPanel').classList.remove('open'));
 
 // --- доска заказов ---
 $('ordClose').addEventListener('click', () => $('ordersPanel').classList.remove('open'));
@@ -3794,7 +3794,7 @@ restoreBoss();
 $('offClose').addEventListener('click', () => { $('offPanel').classList.remove('open'); pop('coins'); save(); });
 initQuests();
 applyOffline();
-if (LIM.mins && limitLeft() <= 0) lockGame();
+if (limitLeft() <= 0) lockGame();
 
 // ================== ЦИКЛ ==================
 resize();
@@ -3806,7 +3806,7 @@ function frame(now){
   const realDt = Math.max(0, (now - last) / 1000), dt = Math.min(0.05, realDt); last = now;
   limitTick(Math.min(realDt, 1));
   if (locked){                            // время на сегодня вышло — игра стоит
-    if (!LIM.mins || limitLeft() > 0){ locked = false; $('lockScreen').classList.remove('open'); }   // наступил новый день или лимит сняли
+    if (limitLeft() > 0){ locked = false; $('lockScreen').classList.remove('open'); }   // наступил новый день или лимит сняли
     return;
   }
   try {
