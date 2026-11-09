@@ -387,6 +387,10 @@ function resize(){
   coinTarget = { x: r.left + 22, y: r.top + r.height / 2 };
 }
 addEventListener('resize', resize);
+// айфон иногда сообщает правильный размер экрана с опозданием — перемеряем ещё раз
+addEventListener('orientationchange', () => setTimeout(resize, 300));
+addEventListener('pageshow', () => setTimeout(resize, 300));
+setTimeout(resize, 500);
 
 function rng(seed){ return function(){ seed |= 0; seed = seed + 0x6D2B79F5 | 0;
   let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
